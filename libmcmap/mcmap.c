@@ -44,7 +44,7 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 	//copy file to buffer...
 	if ((i = fread(buff,1,reg_stat.st_size,reg_file)) != reg_stat.st_size)
 		{
-		fprintf(stderr,"%s ERROR: fread() encountered %s on the last %d requested bytes\n",MCMAP_LIBNAME,(ferror(reg_file)?"an error":"EOF"),(unsigned int)reg_stat.st_size-i);
+		fprintf(stderr,"%s ERROR: fread() encountered %s on the last %d requested bytes of \'%s\'\n",MCMAP_LIBNAME,(ferror(reg_file)?"an error":"EOF"),(unsigned int)reg_stat.st_size-i,reg_name);
 		return NULL;
 		}
 	//don't need this anymore...
@@ -67,7 +67,8 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 				{
 				reg->locations[z][x] = (unsigned int)( (((uint32_t)(reg->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(reg->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(reg->header->locations[z][x].offset[2])) ); //extract big-endian 24-bit integer from reg->header->location[z][x].offset
 				reg->chunks[z][x].header = (struct mcmap_reg_chunkhdr *)&(buff[reg->locations[z][x]*4096]); //connect 5-byte chunk header
-				reg->chunks[z][x].header = reg->chunks[z][x].header+0x05; //'reg->chunks[z][x].data' now points to a block of 'reg->chunks[z][x].header->length - 1' bytes
+				reg->chunks[z][x].size = (unsigned int)( (((uint32_t)(reg->chunks[z][x].header->length[0]))<<24) + (((uint32_t)(reg->chunks[z][x].header->length[1]))<<16) + (((uint32_t)(reg->chunks[z][x].header->length[2]))<<8) + ((uint32_t)(reg->chunks[z][x].header->length[3])) ); //extract big-endian 32-bit integer from reg->chunks[z][x].header->length
+				reg->chunks[z][x].data = (uint8_t *)(reg->chunks[z][x].header+0x05); //'reg->chunks[z][x].data' now points to a block of 'reg->chunks[z][x].size - 1' bytes
 				}
 			}
 		}

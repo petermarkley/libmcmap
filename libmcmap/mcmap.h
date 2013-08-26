@@ -242,7 +242,7 @@ struct mcmap_reg_header //8KiB file header
 	};
 struct mcmap_reg_chunkhdr //5-byte metadata for each chunk
 	{
-	uint32_t length; //size of chunk in bytes, starting with the 1-byte compression type flag here in the metadata
+	uint8_t length[4]; //size of chunk in bytes, starting with the 1-byte compression type flag here in the metadata
 	uint8_t compression; //compression type flag; 0x01 for GZip (RFC1952, unused in practice) and 0x02 for Zlib (RFC1950)
 	};
 
@@ -250,6 +250,7 @@ struct mcmap_reg_chunkhdr //5-byte metadata for each chunk
 struct mcmap_reg_chunk
 	{
 	struct mcmap_reg_chunkhdr *header; //to point at 5-byte chunk metadata
+	unsigned int size; //parsed copy of big-endian 32-bit integer at header->length
 	uint8_t *data; //to point at the next byte
 	};
 struct mcmap_region
