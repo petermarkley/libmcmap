@@ -1,6 +1,8 @@
 #ifndef __MCMAP_HEADER
 #define __MCMAP_HEADER
 
+#include <stdint.h>
+
 #define MCMAP_MAXNAME 2048
 
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
@@ -210,7 +212,7 @@ typedef enum
 	} mcmap_biomeid;
 
 
-// data storage scheme, to be read in 5 stages:
+// map data scheme, to be read in 5 stages:
 // --------------------------------------------
 //		1) anvil (.rca) region format < http://www.minecraftwiki.net/wiki/Region_file_format >
 //	--extract--
@@ -226,7 +228,7 @@ typedef enum
 // stage 1: region file in memory
 // ------------------------------
 
-//bit-for-bit structured copy of file contents
+//bit-for-bit structured copy of file header
 struct mcmap_reg_chunkloc //location atom for a given chunk
 	{
 	uint8_t offset[3]; //number of 4KiB sectors between start of file and start of chunk
@@ -252,8 +254,16 @@ struct mcmap_reg_chunk
 struct mcmap_region
 	{
 	struct mcmap_reg_header *header; //to point at a new RAM copy of the file header
-	uint8_t *data; //to point at a new RAM copy of the rest of the file, in case having more than two 'fread' calls is undesirable
+	unsigned int locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
 	struct mcmap_reg_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
+
+
+//searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
+//returns pointer to region memory structure; if no file returns NULL
+struct mcmap_region *mcmap_read_region(int, int, char *);
+
+//free all memory allocated in mcmap_read_region()
+void mcmap_free_region(struct mcmap_region *);
 
 #endif
