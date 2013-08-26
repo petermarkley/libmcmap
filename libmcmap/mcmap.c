@@ -15,7 +15,7 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 	struct stat reg_stat;
 	uint8_t *buff;
 	struct mcmap_region *reg;
-	unsigned int x,z,i;
+	unsigned int x,z,i,err;
 	
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
@@ -59,18 +59,47 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 	
 	//engage structure to memory space
 	reg->header = (struct mcmap_reg_header *)buff;
-	for (z=0;z<32;z++)
+	err = 0;
+	for (z=0;z<32 && !err;z++)
 		{
-		for (x=0;x<32;x++)
+		for (x=0;x<32 && !err;x++)
 			{
 			if (reg->header->locations[z][x].sector_count > 0)
 				{
-				reg->locations[z][x] = (unsigned int)( (((uint32_t)(reg->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(reg->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(reg->header->locations[z][x].offset[2])) ); //extract big-endian 24-bit integer from reg->header->location[z][x].offset
-				reg->chunks[z][x].header = (struct mcmap_reg_chunkhdr *)&(buff[reg->locations[z][x]*4096]); //connect 5-byte chunk header
-				reg->chunks[z][x].size = (unsigned int)( (((uint32_t)(reg->chunks[z][x].header->length[0]))<<24) + (((uint32_t)(reg->chunks[z][x].header->length[1]))<<16) + (((uint32_t)(reg->chunks[z][x].header->length[2]))<<8) + ((uint32_t)(reg->chunks[z][x].header->length[3])) ); //extract big-endian 32-bit integer from reg->chunks[z][x].header->length
-				reg->chunks[z][x].data = (uint8_t *)(reg->chunks[z][x].header+0x05); //'reg->chunks[z][x].data' now points to a block of 'reg->chunks[z][x].size - 1' bytes
+				//extract big-endian 24-bit integer from reg->header->location[z][x].offset
+				reg->locations[z][x] = (unsigned int)( (((uint32_t)(reg->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(reg->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(reg->header->locations[z][x].offset[2])) );
+				
+				//chunk listing should not point anywhere in the file header
+				if (reg->locations[z][x] < 2)
+					err = 1;
+				//chunk listing should not point past the end of the file
+				i = reg->locations[z][x]*4096;
+				if (i+reg->header->locations[z][x].sector_count*4096 >= reg_stat.st_size)
+					err = 1;
+				
+				if (!err)
+					{
+					//connect 5-byte chunk header
+					reg->chunks[z][x].header = (struct mcmap_reg_chunkhdr *)&(buff[i]);
+					//extract big-endian 32-bit integer from reg->chunks[z][x].header->length (same location as buff[i])
+					reg->chunks[z][x].size = (unsigned int)( (((uint32_t)(buff[i]))<<24) + (((uint32_t)(buff[i+1]))<<16) + (((uint32_t)(buff[i+2]))<<8) + ((uint32_t)(buff[i+3])) );
+					//'reg->chunks[z][x].data' will now point to a block of 'reg->chunks[z][x].size - 1' bytes
+					reg->chunks[z][x].data = (uint8_t *)(reg->chunks[z][x].header+0x05);
+					
+					//listed chunk size should not be larger than the rest of the file
+					if (i+4+reg->chunks[z][x].size >= reg_stat.st_size)
+						err = 1;
+					//in fact neither should it be larger than the sector count in the file header
+					if (reg->chunks[z][x].size > reg->header->locations[z][x].sector_count*4096)
+						err = 1;
+					}
 				}
 			}
+		}
+	if (err)
+		{
+		fprintf(stderr,"%s ERROR: file \'%s\' may be correupted\n",MCMAP_LIBNAME,reg_name);
+		return NULL;
 		}
 	
 	return reg;
