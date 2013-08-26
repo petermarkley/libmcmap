@@ -214,7 +214,7 @@ typedef enum
 
 
 // map data scheme, to be read in 5 stages:
-// --------------------------------------------
+// ----------------------------------------
 //		1) anvil (.rca) region format < http://www.minecraftwiki.net/wiki/Region_file_format >
 //	--extract--
 //		2) individual compressed chunk
