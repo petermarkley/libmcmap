@@ -94,6 +94,12 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 						err = 1;
 					}
 				}
+			else
+				{
+				reg->chunks[z][x].header = NULL;
+				reg->chunks[z][x].size = 0;
+				reg->chunks[z][x].data = NULL;
+				}
 			}
 		}
 	if (err)
