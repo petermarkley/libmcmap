@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define MCMAP_MAXNAME 2048
+#define MCMAP_LIBNAME "libmcmap"
 
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
 typedef enum

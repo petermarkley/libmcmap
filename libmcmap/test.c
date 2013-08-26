@@ -6,11 +6,15 @@ int main(int argc, char **argv)
 	FILE *f;
 	struct mcmap_region *reg;
 	
-	reg = mcmap_read_region(0,0,"/Users/peter/Library/Application Support/minecraft/saves/Experiment Lab/");
+	if ((reg = mcmap_read_region(0,0,"./test_map/saves/Experiment Lab/")) == NULL)
+		{
+		fprintf(stderr,"couldn't parse region for some reason\n");
+		return -1;
+		}
 	
 	if ((f = fopen("./test-parsed_chunk.nbt","w")) == NULL)
 		{
-		fprintf(stderr,"couldn't write to './test-parsed_chunk.nbt' for some reason\n");
+		fprintf(stderr,"couldn't write chunk for some reason\n");
 		return -1;
 		}
 	fwrite(reg->chunks[0][0].data,1,reg->chunks[0][0].header->length-1,f);

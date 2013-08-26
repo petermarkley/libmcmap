@@ -20,32 +20,31 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		{
-		snprintf(reg_name, MCMAP_MAXNAME, "%s", path);
-		reg_name[i-1] = '\0';
-		snprintf(reg_name, MCMAP_MAXNAME, "%s/region/r.%d.%d.mca", reg_name, ix, iz);
-		}
+		snprintf(reg_name, MCMAP_MAXNAME, "%sregion/r.%d.%d.mca", path, ix, iz);
 	else
 		snprintf(reg_name, MCMAP_MAXNAME, "%s/region/r.%d.%d.mca", path, ix, iz);
 	//open file...
 	if ((reg_file = fopen(reg_name,"r")) == NULL)
+		{
+		fprintf(stderr,"%s ERROR: fopen() on \'%s\' returned:\n\t%s\n",MCMAP_LIBNAME,reg_name,strerror(errno));
 		return NULL;
+		}
 	//determine filesize...
 	if (fstat(fileno(reg_file),&reg_stat) != 0)
 		{
-		fprintf(stderr,"libmcmap ERROR: fstat() on \'%s\' returned with error %d\n",reg_name,errno);
+		fprintf(stderr,"%s ERROR: fstat() on \'%s\' returned:\n\t%s\n",MCMAP_LIBNAME,reg_name,strerror(errno));
 		return NULL;
 		}
 	//allocate buffer...
 	if ((buff = (uint8_t *)calloc(reg_stat.st_size,1)) == NULL)
 		{
-		fprintf(stderr,"libmcmap ERROR: out of memory!\n");
+		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",MCMAP_LIBNAME);
 		return NULL;
 		}
 	//copy file to buffer...
 	if ((i = fread(buff,1,reg_stat.st_size,reg_file)) != reg_stat.st_size)
 		{
-		fprintf(stderr,"libmcmap ERROR: fread() tried to read %d bytes, but did %d bytes\n",(unsigned int)reg_stat.st_size,i);
+		fprintf(stderr,"%s ERROR: fread() encountered %s on the last %d requested bytes\n",MCMAP_LIBNAME,(ferror(reg_file)?"an error":"EOF"),(unsigned int)reg_stat.st_size-i);
 		return NULL;
 		}
 	//don't need this anymore...
@@ -54,7 +53,7 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 	//allocate navigation structure
 	if ((reg = (struct mcmap_region *)calloc(1,sizeof(struct mcmap_region))) == NULL)
 		{
-		fprintf(stderr,"libmcmap ERROR: out of memory!\n");
+		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",MCMAP_LIBNAME);
 		return NULL;
 		}
 	
