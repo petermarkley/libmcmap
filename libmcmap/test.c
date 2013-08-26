@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 	FILE *f;
 	struct mcmap_region *reg;
 	
-	reg = mcmap_read_region(0,0,"/Users/peter/Library/Application Support/minecraft/saves/Experiment Labs/");
+	reg = mcmap_read_region(0,0,"/Users/peter/Library/Application Support/minecraft/saves/Experiment Lab/");
 	
 	if ((f = fopen("./test-parsed_chunk.nbt","w")) == NULL)
 		{
