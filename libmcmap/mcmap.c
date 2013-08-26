@@ -82,15 +82,15 @@ struct mcmap_region *mcmap_read_region(int ix, int iz, char *path)
 					//connect 5-byte chunk header
 					reg->chunks[z][x].header = (struct mcmap_reg_chunkhdr *)&(buff[i]);
 					//extract big-endian 32-bit integer from reg->chunks[z][x].header->length (same location as buff[i])
-					reg->chunks[z][x].size = (unsigned int)( (((uint32_t)(buff[i]))<<24) + (((uint32_t)(buff[i+1]))<<16) + (((uint32_t)(buff[i+2]))<<8) + ((uint32_t)(buff[i+3])) );
-					//'reg->chunks[z][x].data' will now point to a block of 'reg->chunks[z][x].size - 1' bytes
+					reg->chunks[z][x].size = (unsigned int)( (((uint32_t)(buff[i]))<<24) + (((uint32_t)(buff[i+1]))<<16) + (((uint32_t)(buff[i+2]))<<8) + ((uint32_t)(buff[i+3])) ) - 1;
+					//'reg->chunks[z][x].data' will now point to a block of 'reg->chunks[z][x].size' bytes
 					reg->chunks[z][x].data = (uint8_t *)(reg->chunks[z][x].header+0x05);
 					
 					//listed chunk size should not be larger than the rest of the file
-					if (i+4+reg->chunks[z][x].size >= reg_stat.st_size)
+					if (i+5+reg->chunks[z][x].size >= reg_stat.st_size)
 						err = 1;
 					//in fact neither should it be larger than the sector count in the file header
-					if (reg->chunks[z][x].size > reg->header->locations[z][x].sector_count*4096)
+					if (reg->chunks[z][x].size+5 > reg->header->locations[z][x].sector_count*4096)
 						err = 1;
 					}
 				}

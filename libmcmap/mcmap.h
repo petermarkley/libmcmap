@@ -250,7 +250,7 @@ struct mcmap_reg_chunkhdr //5-byte metadata for each chunk
 struct mcmap_reg_chunk
 	{
 	struct mcmap_reg_chunkhdr *header; //to point at 5-byte chunk metadata
-	unsigned int size; //parsed copy of big-endian 32-bit integer at header->length
+	unsigned int size; //parsed copy of big-endian 32-bit integer at header->length, with 1 subtracted for compression flag
 	uint8_t *data; //to point at the next byte
 	};
 struct mcmap_region

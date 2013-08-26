@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"couldn't write chunk for some reason\n");
 		return -1;
 		}
-	fwrite(reg->chunks[0][0].data,1,reg->chunks[0][0].size-1,f);
+	fwrite(reg->chunks[0][0].data,1,reg->chunks[0][0].size,f);
 	fclose(f);
 	
 	mcmap_free_region(reg);
