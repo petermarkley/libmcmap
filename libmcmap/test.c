@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 				fprintf(stdout,"stats for chunk (%u,%u):\n",x,z);
 				fprintf(stdout,"\tsector offset: %u (derived from %02x %02x %02x)\n",reg->locations[z][x],reg->header->locations[z][x].offset[0],reg->header->locations[z][x].offset[1],reg->header->locations[z][x].offset[2]);
 				fprintf(stdout,"\tsector count: %x\n",reg->header->locations[z][x].sector_count);
-				fprintf(stdout,"\tpointer was accordingly set to %x (%u bytes after beginning at %x)\n",(unsigned int)(reg->chunks[z][x].header),(unsigned int)(reg->chunks[z][x].header)-(unsigned int)(reg->header),(unsigned int)(reg->header));
+				fprintf(stdout,"\tpointer was accordingly set to %p (%u bytes after beginning at %p)\n",reg->chunks[z][x].header,(unsigned int)(reg->chunks[z][x].header)-(unsigned int)(reg->header),reg->header);
 				fprintf(stdout,"\tchunk size in bytes: %u\n",reg->chunks[z][x].size);
 				}
 			else

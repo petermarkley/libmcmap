@@ -229,18 +229,18 @@ typedef enum
 // stage 1: region file in memory
 // ------------------------------
 
-//bit-for-bit structured copy of file header
-struct mcmap_reg_chunkloc //location atom for a given chunk
+//bit-for-bit structured copy of file metadata
+struct __attribute__((__packed__)) mcmap_reg_chunkloc //location atom for a given chunk
 	{
 	uint8_t offset[3]; //number of 4KiB sectors between start of file and start of chunk
 	uint8_t sector_count; //size of chunk in 4KiB sectors
 	};
-struct mcmap_reg_header //8KiB file header
+struct __attribute__((__packed__)) mcmap_reg_header //8KiB file header
 	{
 	struct mcmap_reg_chunkloc locations[32][32]; //chunk (x,z)'s location atom is at locations[z][x] when x & z are positive; location[31-z][31-x] when negative
-	uint32_t dates[32][32]; //UNIX timestamps for when each chunk was last modified; we won't really touch these, just read & preserve when resaving
+	uint8_t dates[32][32][4]; //UNIX timestamps for when each chunk was last modified
 	};
-struct mcmap_reg_chunkhdr //5-byte metadata for each chunk
+struct __attribute__((__packed__)) mcmap_reg_chunkhdr //5-byte metadata for each chunk
 	{
 	uint8_t length[4]; //size of chunk in bytes, starting with the 1-byte compression type flag here in the metadata
 	uint8_t compression; //compression type flag; 0x01 for GZip (RFC1952, unused in practice) and 0x02 for Zlib (RFC1950)
@@ -256,7 +256,7 @@ struct mcmap_reg_chunk
 struct mcmap_region
 	{
 	struct mcmap_reg_header *header; //to point at a new RAM copy of the file header
-	unsigned int locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
+	uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
 	struct mcmap_reg_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
 
