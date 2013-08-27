@@ -230,42 +230,42 @@ typedef enum
 // ------------------------------
 
 //bit-for-bit structured copy of file metadata
-struct __attribute__((__packed__)) mcmap_reg_chunkloc //location atom for a given chunk
+struct __attribute__((__packed__)) mcmap_region_chunk_location //location atom for a given chunk
 	{
 	uint8_t offset[3]; //number of 4KiB sectors between start of file and start of chunk
 	uint8_t sector_count; //size of chunk in 4KiB sectors
 	};
-struct __attribute__((__packed__)) mcmap_reg_header //8KiB file header
+struct __attribute__((__packed__)) mcmap_region_header //8KiB file header
 	{
-	struct mcmap_reg_chunkloc locations[32][32]; //chunk (x,z)'s location atom is at locations[z][x] when x & z are positive; location[31-z][31-x] when negative
+	struct mcmap_region_chunk_location locations[32][32]; //chunk (x,z)'s location atom is at locations[z][x] when x & z are positive; location[31-z][31-x] when negative
 	uint8_t dates[32][32][4]; //UNIX timestamps for when each chunk was last modified
 	};
-struct __attribute__((__packed__)) mcmap_reg_chunkhdr //5-byte metadata for each chunk
+struct __attribute__((__packed__)) mcmap_region_chunk_header //5-byte metadata for each chunk
 	{
 	uint8_t length[4]; //size of chunk in bytes, starting with the 1-byte compression type flag here in the metadata
 	uint8_t compression; //compression type flag; 0x01 for GZip (RFC1952, unused in practice) and 0x02 for Zlib (RFC1950)
 	};
 
 //nodes to dynamically navigate file contents
-struct mcmap_reg_chunk
+struct mcmap_region_chunk
 	{
-	struct mcmap_reg_chunkhdr *header; //to point at 5-byte chunk metadata
+	struct mcmap_region_chunk_header *header; //to point at 5-byte chunk metadata
 	unsigned int size; //parsed copy of big-endian 32-bit integer at header->length, with 1 subtracted for compression flag
 	uint8_t *data; //to point at the next byte
 	};
 struct mcmap_region
 	{
-	struct mcmap_reg_header *header; //to point at a new RAM copy of the file header
+	struct mcmap_region_header *header; //to point at a new RAM copy of the file header
 	uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
-	struct mcmap_reg_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
+	struct mcmap_region_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
 
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if no file returns NULL
-struct mcmap_region *mcmap_read_region(int, int, char *);
+struct mcmap_region *mcmap_region_read(int, int, char *);
 
-//free all memory allocated in mcmap_read_region()
-void mcmap_free_region(struct mcmap_region *);
+//free all memory allocated in mcmap_region_read()
+void mcmap_region_free(struct mcmap_region *);
 
 #endif
