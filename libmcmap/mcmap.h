@@ -2,6 +2,7 @@
 #define __MCMAP_HEADER
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
 
 #define MCMAP_MAXNAME 2048
