@@ -2,6 +2,7 @@
 #define __LIBNBT_HEADER
 
 #include <stdint.h>
+#include <stdlib.h>
 
 //interpreting and encoding NBT file format < http://www.minecraftwiki.net/wiki/NBT_format >
 //wrtten by Peter Markley, copyright 2013
@@ -21,6 +22,14 @@ typedef enum
 	NBT_COMPOUND   = 10, //tags, each with an id and name, terminated by an NBT_END
 	NBT_INT_ARRAY  = 11  //one NBT_INT payload followed by that many NBT_INTs
 	} nbt_tagid;
+
+typedef enum
+	{
+	NBT_COMPRESS_NONE = 0, //uncompressed
+	NBT_COMPRESS_GZIP = 1, //RFC 1952
+	NBT_COMPRESS_ZLIB = 2, //RFC 1950
+	NBT_COMPRESS_UNKNOWN = -1
+	} nbt_compression_type;
 
 //we're not gonna mess with any bit-for-bit struct-to-memory mapping nonsense here like we do in libmcmap
 
@@ -59,5 +68,11 @@ struct nbt_tag
 	struct nbt_tag *children; //NULL for all but compound tags or lists
 	unsigned int children_num; //0 for all but compound tags or lists
 	};
+
+//create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
+struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type compress_type);
+
+//free memory allocated in nbt_decode()
+void nbt_free(struct nbt_tag *);
 
 #endif
