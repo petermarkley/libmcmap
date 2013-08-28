@@ -8,6 +8,9 @@
 #define MCMAP_MAXNAME 2048
 #define MCMAP_LIBNAME "libmcmap"
 
+//reading & writing minecraft map data
+//written by Peter Markley, copyright 2013
+
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
 typedef enum
 	{
