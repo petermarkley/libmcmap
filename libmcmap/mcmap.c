@@ -15,7 +15,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	struct stat r_stat;
 	uint8_t *buff;
 	struct mcmap_region *r;
-	unsigned int x,z,i,err;
+	unsigned int x,z,i,l,err;
 	
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
@@ -67,13 +67,13 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 			if (r->header->locations[z][x].sector_count > 0)
 				{
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				r->locations[z][x] = (unsigned int)( (((uint32_t)(r->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(r->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(r->header->locations[z][x].offset[2])) );
+				l = (unsigned int)( (((uint32_t)(r->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(r->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(r->header->locations[z][x].offset[2])) );
 				
 				//chunk listing should not point anywhere in the file header
-				if (r->locations[z][x] < 2)
+				if (l < 2)
 					err = 1;
 				//chunk listing should not point past the end of the file
-				i = r->locations[z][x]*4096;
+				i = l*4096;
 				if (i+r->header->locations[z][x].sector_count*4096 >= r_stat.st_size)
 					err = 1;
 				

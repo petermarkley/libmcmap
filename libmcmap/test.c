@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 			if (r->chunks[z][x].header != NULL)
 				{
 				fprintf(stdout,"stats for chunk (%u,%u):\n",x,z);
-				fprintf(stdout,"\tsector offset: %u (derived from %02x %02x %02x)\n",r->locations[z][x],r->header->locations[z][x].offset[0],r->header->locations[z][x].offset[1],r->header->locations[z][x].offset[2]);
+				//fprintf(stdout,"\tsector offset: %u (derived from %02x %02x %02x)\n",r->locations[z][x],r->header->locations[z][x].offset[0],r->header->locations[z][x].offset[1],r->header->locations[z][x].offset[2]);
 				fprintf(stdout,"\tsector count: %x\n",r->header->locations[z][x].sector_count);
 				fprintf(stdout,"\tpointer was accordingly set to %p (%u bytes after beginning at %p)\n",r->chunks[z][x].header,(unsigned int)(r->chunks[z][x].header)-(unsigned int)(r->header),r->header);
 				fprintf(stdout,"\tchunk size in bytes: %u\n",r->chunks[z][x].size);

@@ -256,7 +256,7 @@ struct mcmap_region_chunk
 struct mcmap_region
 	{
 	struct mcmap_region_header *header; //to point at a new RAM copy of the file header
-	uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
+	//uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
 	struct mcmap_region_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
 
