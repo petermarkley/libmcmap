@@ -251,7 +251,7 @@ struct __attribute__((__packed__)) mcmap_region_chunk_header //5-byte metadata f
 struct mcmap_region_chunk
 	{
 	struct mcmap_region_chunk_header *header; //to point at 5-byte chunk metadata
-	unsigned int size; //parsed copy of big-endian 32-bit integer at header->length, with 1 subtracted for compression flag
+	size_t size; //parsed copy of big-endian 32-bit integer at header->length, with 1 subtracted for compression flag
 	uint8_t *data; //to point at the next byte
 	};
 struct mcmap_region
