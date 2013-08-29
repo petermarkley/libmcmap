@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include "libnbt/nbt.h"
 
 #define MCMAP_MAXNAME 2048
 #define MCMAP_LIBNAME "libmcmap"
@@ -265,12 +266,19 @@ struct mcmap_region
 	struct mcmap_region_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
 
-
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
-//returns pointer to region memory structure; if no file returns NULL
+//returns pointer to region memory structure; if error returns NULL
 struct mcmap_region *mcmap_region_read(int, int, char *);
 
-//free all memory allocated in mcmap_region_read()
+//free all memory allocated in 'mcmap_region_read()' or 'mcmap_region_new()'
 void mcmap_region_free(struct mcmap_region *);
+
+
+//stages 2-4: parsing gzipped NBT file in memory
+//----------------------------------------------
+
+//takes an individual chunk from a 'struct mcmap_region,' returns a parsed root 'nbt_tag'
+//if error returns NULL; free the memory with 'nbt_free()'
+struct nbt_tag *mcmap_chunk_read(struct mcmap_region_chunk *);
 
 #endif

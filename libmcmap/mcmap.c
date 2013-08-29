@@ -5,9 +5,10 @@
 #include <errno.h>
 #include <stdint.h>
 #include "mcmap.h"
+#include "libnbt/nbt.h"
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
-//returns pointer to region memory structure; if no file returns NULL
+//returns pointer to region memory structure; if error returns NULL
 struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	{
 	FILE *r_file;
@@ -114,10 +115,25 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	return r;
 	}
 
-//free all memory allocated in mcmap_region_read()
+//free all memory allocated in 'mcmap_region_read()' or 'mcmap_region_new()'
 void mcmap_region_free(struct mcmap_region *r)
 	{
 	free(r->header); //free the memory buffer of the file contents
 	free(r); //free the navigation nodes that were connected throughout the buffer
 	return;
+	}
+
+//takes an individual chunk from a 'struct mcmap_region,' returns a parsed root 'nbt_tag'
+struct nbt_tag *mcmap_chunk_read(struct mcmap_region_chunk *c)
+	{
+	nbt_compression_type t;
+	if (c == NULL || c->header == NULL)
+		return NULL;
+	switch (c->header->compression)
+		{
+		case 0x1: t=NBT_COMPRESS_GZIP; break;
+		case 0x2: t=NBT_COMPRESS_ZLIB; break;
+		default: t=NBT_COMPRESS_UNKNOWN; break;
+		}
+	return nbt_decode(c->data,c->size,t);
 	}
