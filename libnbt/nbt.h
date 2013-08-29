@@ -65,14 +65,14 @@ struct nbt_tag
 	struct nbt_tag *parent; //only for the root tag will this be NULL
 	struct nbt_tag *prev_sib;
 	struct nbt_tag *next_sib;
-	struct nbt_tag *children; //NULL for all but compound tags or lists
+	struct nbt_tag *children; //NULL for all but compound tags or lists; will allocate array of size 'children_num'
 	unsigned int children_num; //0 for all but compound tags or lists
 	};
 
 //create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
 struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type compress_type);
 
-//free memory allocated in nbt_decode()
+//free memory allocated in 'nbt_decode()' or 'nbt_new()'
 void nbt_free(struct nbt_tag *);
 
 #endif
