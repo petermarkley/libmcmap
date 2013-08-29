@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define NBT_LIBNAME "libnbt"
+
 //interpreting and encoding NBT file format < http://www.minecraftwiki.net/wiki/NBT_format >
 //wrtten by Peter Markley, copyright 2013
 
-typedef enum
+typedef enum //tag type
 	{
 	NBT_END        =  0, //this should not appear in the memory structure
 	NBT_BYTE       =  1, // 8-bit signed value
@@ -23,7 +25,7 @@ typedef enum
 	NBT_INT_ARRAY  = 11  //one NBT_INT payload followed by that many NBT_INTs
 	} nbt_tagid;
 
-typedef enum
+typedef enum //compression type
 	{
 	NBT_COMPRESS_NONE = 0, //uncompressed
 	NBT_COMPRESS_GZIP = 1, //RFC 1952
@@ -32,7 +34,6 @@ typedef enum
 	} nbt_compression_type;
 
 //we're not gonna mess with any bit-for-bit struct-to-memory mapping nonsense here like we do in libmcmap
-
 struct nbt_tag
 	{
 	nbt_tagid type; //access only the corresponding payload
