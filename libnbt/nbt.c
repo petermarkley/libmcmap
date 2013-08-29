@@ -1,8 +1,8 @@
-#include <zlib.h>
-#include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <zlib.h>
 #include "nbt.h"
 
 //operate zlib pipe from input to output, return size of output
@@ -91,9 +91,6 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		{
 		if ((input_sz = _nbt_decompress(comp,input,comp_sz,compress_type)) == 0)
 			return NULL;
-		fprintf(stderr,"\tYAY! we might have %ld bytes of uncompressed data now at %p!\n",input_sz,input);
-		//FIXME - do something with this instead of just freeing it
-		free(input);
 		}
 	else
 		{
@@ -101,6 +98,11 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		input_sz = comp_sz;
 		}
 	
+	//FIXME - do more stuff here
+	fprintf(stderr,"\tYAY! we might have %ld bytes of uncompressed data now at %p!\n",input_sz,input);
+	
+	if (input != comp) //don't free comp because we didn't allocate it
+		free(input); //we only allocate if we run it through zlib
 	return NULL;
 	}
 
