@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 				{
 				fprintf(stdout,"stats for chunk (%u,%u):\n",x,z);
 				fprintf(stdout,"\ttimestamp: %s",ctime(&(r->dates[z][x])));
-				fprintf(stdout,"\tbyte size: %ld\n",r->chunks[z][x].size);
+				fprintf(stdout,"\tbyte size: %d\n",(int)r->chunks[z][x].size);
 				}
 			else
 				fprintf(stdout,"chunk (%u,%u) does not exist\n",x,z);

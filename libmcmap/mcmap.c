@@ -88,7 +88,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 					//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
 					r->chunks[z][x].size = (unsigned int)( (((uint32_t)(buff[i]))<<24) + (((uint32_t)(buff[i+1]))<<16) + (((uint32_t)(buff[i+2]))<<8) + ((uint32_t)(buff[i+3])) ) - 1;
 					//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
-					r->chunks[z][x].data = (uint8_t *)(r->chunks[z][x].header+0x05);
+					r->chunks[z][x].data = &(buff[i+5]);
 					
 					//listed chunk size should not be larger than the rest of the file
 					if (i+5+r->chunks[z][x].size >= r_stat.st_size)
