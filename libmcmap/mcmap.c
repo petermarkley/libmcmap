@@ -13,7 +13,7 @@
 struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	{
 	FILE *r_file;
-	char r_name[MCMAP_MAXNAME];
+	char r_name[MCMAP_MAXSTR];
 	struct stat r_stat;
 	uint8_t *buff;
 	struct mcmap_region *r;
@@ -23,31 +23,31 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		snprintf(r_name, MCMAP_MAXNAME, "%sregion/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%sregion/r.%d.%d.mca", path, ix, iz);
 	else
-		snprintf(r_name, MCMAP_MAXNAME, "%s/region/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%s/region/r.%d.%d.mca", path, ix, iz);
 	//open file...
 	if ((r_file = fopen(r_name,"r")) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: fopen() on \'%s\' returned:\n\t%s\n",MCMAP_LIBNAME,r_name,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
 		return NULL;
 		}
 	//determine filesize...
 	if (fstat(fileno(r_file),&r_stat) != 0)
 		{
-		fprintf(stderr,"%s ERROR: fstat() on \'%s\' returned:\n\t%s\n",MCMAP_LIBNAME,r_name,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fstat() on \'%s\': %s",r_name,strerror(errno));
 		return NULL;
 		}
 	//allocate buffer...
 	if ((buff = (uint8_t *)calloc(r_stat.st_size,1)) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",MCMAP_LIBNAME);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
 	//copy file to buffer...
 	if ((i = fread(buff,1,r_stat.st_size,r_file)) != r_stat.st_size)
 		{
-		fprintf(stderr,"%s ERROR: fread() encountered %s on the last %d requested bytes of \'%s\'\n",MCMAP_LIBNAME,(ferror(r_file)?"an error":"EOF"),(unsigned int)r_stat.st_size-i,r_name);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(r_file)?"an error":"EOF"),(unsigned int)r_stat.st_size-i,r_name);
 		return NULL;
 		}
 	//don't need this anymore...
@@ -56,7 +56,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	//allocate navigation structure
 	if ((r = (struct mcmap_region *)calloc(1,sizeof(struct mcmap_region))) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",MCMAP_LIBNAME);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
 	
@@ -109,7 +109,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 		}
 	if (err)
 		{
-		fprintf(stderr,"%s ERROR: file \'%s\' may be correupted\n",MCMAP_LIBNAME,r_name);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be correupted",r_name);
 		return NULL;
 		}
 	

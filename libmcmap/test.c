@@ -30,7 +30,11 @@ int main(int argc, char **argv)
 		nbt_free_all(t);
 		}*/
 	
-	t = nbt_file_read("test_map/saves/Experiment Lab/level.dat");
+	if ((t = nbt_file_read("test_map/saves/Experiment Lab/level.dat")) == NULL)
+		{
+		fprintf(stderr,"%s ERROR: %s\n",NBT_LIBNAME,nbt_error);
+		return 1;
+		}
 	fprintf(stdout,"\n");
 	nbt_print_ascii(stdout,t,3,10);
 	fprintf(stdout,"\n");

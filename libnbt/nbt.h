@@ -7,6 +7,8 @@
 #define NBT_LIBNAME "libnbt"
 #define NBT_MAXSTR 2048
 
+char nbt_error[NBT_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
+
 //interpreting and encoding NBT file format < http://www.minecraftwiki.net/wiki/NBT_format >
 //wrtten by Peter Markley, copyright 2013
 

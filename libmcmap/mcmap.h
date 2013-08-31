@@ -6,8 +6,10 @@
 #include <time.h>
 #include "libnbt/nbt.h"
 
-#define MCMAP_MAXNAME 2048
 #define MCMAP_LIBNAME "libmcmap"
+#define MCMAP_MAXSTR 2048
+
+char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
 //reading & writing minecraft map data
 //written by Peter Markley, copyright 2013

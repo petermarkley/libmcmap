@@ -19,7 +19,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	//we're responsible for allocating output
 	if (output[0] != NULL)
 		{
-		fprintf(stderr,"%s ERROR: _nbt_decompress() was passed a non-null 'output' pointer for allocation\n",NBT_LIBNAME);
+		snprintf(nbt_error,NBT_MAXSTR,"_nbt_decompress() was passed a non-null 'output' pointer for allocation");
 		return 0;
 		}
 	switch (compress_type)
@@ -38,14 +38,14 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	strm.avail_in = input_sz;
 	if (inflateInit2(&strm,15+w_add) != Z_OK)
 		{
-		fprintf(stderr,"%s ERROR: zlib inflateInit2() failed: %s\n",NBT_LIBNAME,strm.msg);
+		snprintf(nbt_error,NBT_MAXSTR,"zlib inflateInit2(): %s",strm.msg);
 		return 0;
 		}
 	//start out assuming a 2:1 compression ratio
 	output_sz = input_sz*2;
 	if ((output[0] = (uint8_t *)calloc(output_sz,1)) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 		return 0;
 		}
 	strm.next_out = output[0];
@@ -57,14 +57,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 		//check for errors
 		if (ret != Z_OK)
 			{
-			switch (ret)
-				{
-				case Z_DATA_ERROR: fprintf(stderr,"\tZ_DATA_ERROR\n"); break;
-				case Z_STREAM_ERROR: fprintf(stderr,"\tZ_STREAM_ERROR\n"); break;
-				case Z_MEM_ERROR: fprintf(stderr,"\tZ_MEM_ERROR\n"); break;
-				case Z_BUF_ERROR: fprintf(stderr,"\tZ_BUF_ERROR\n"); break;
-				}
-			fprintf(stderr,"%s ERROR: zlib inflate() failed: %s\n",NBT_LIBNAME,strm.msg);
+			snprintf(nbt_error,NBT_MAXSTR,"zlib inflate(): %s",strm.msg);
 			return 0;
 			}
 		//check the buffer size
@@ -73,7 +66,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 			output_sz = output_sz*2; //let's go ahead and double it each time
 			if ((output[0] = realloc(output[0],output_sz)) == NULL)
 				{
-				fprintf(stderr,"%s ERROR: realloc() returned NULL\n",NBT_LIBNAME);
+				snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
 				return 0;
 				}
 			strm.next_out = &(output[0][strm.total_out+1]);
@@ -85,7 +78,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	output_sz -= strm.avail_out;
 	if ((output[0] = realloc(output[0],output_sz)) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: realloc() returned NULL\n",NBT_LIBNAME);
+		snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
 		return 0;
 		}
 	return output_sz;
@@ -110,7 +103,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 	//allocate tag
 	if ((t[0] = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
 		{
-		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 		return -1;
 		}
 	//populate immediately known info
@@ -122,7 +115,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		{
 		if (parent == NULL) //the file root should not be a list
 			{
-			fprintf(stderr,"%s ERROR: list item with NULL parent\n",NBT_LIBNAME);
+			snprintf(nbt_error,NBT_MAXSTR,"list item with NULL parent");
 			return -1;
 			}
 		t[0]->type = parent->payload.p_list;
@@ -140,7 +133,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			//allocate space for name
 			if ((t[0]->name = (char *)calloc(num+1,1)) == NULL)
 				{
-				fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+				snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 				return -1;
 				}
 			//store name
@@ -151,7 +144,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		//check range of input
 		if (nextin >= limit)
 			{
-			fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+			snprintf(nbt_error,NBT_MAXSTR,"premature end of stream");
 			return -1;
 			}
 		}
@@ -160,7 +153,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 	switch(t[0]->type)
 		{
 		case NBT_END:
-			fprintf(stderr,"%s ERROR: unexpected compound tag terminator\n",NBT_LIBNAME);
+			snprintf(nbt_error,NBT_MAXSTR,"unexpected compound tag terminator");
 			return -1;
 			break;
 		case NBT_BYTE:
@@ -197,7 +190,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				{
 				if ((t[0]->payload.p_byte_array.data = (int8_t *)calloc(t[0]->payload.p_byte_array.size,1)) == NULL)
 					{
-					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 					return -1;
 					}
 				memcpy(t[0]->payload.p_byte_array.data,&(input[nextin]),t[0]->payload.p_byte_array.size);
@@ -211,7 +204,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				{
 				if ((t[0]->payload.p_string = (char *)calloc(num,1)) == NULL)
 					{
-					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 					return -1;
 					}
 				memcpy(t[0]->payload.p_string,&(input[nextin]),num);
@@ -239,7 +232,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 					//check input range
 					if (nextin >= limit)
 						{
-						fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+						snprintf(nbt_error,NBT_MAXSTR,"premature end of stream");
 						return -1;
 						}
 					//allocate next child as sibling of this one
@@ -267,7 +260,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				//check input range
 				if (nextin >= limit)
 					{
-					fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+					snprintf(nbt_error,NBT_MAXSTR,"premature end of stream");
 					return -1;
 					}
 				//allocate next child as sibling of this one
@@ -289,7 +282,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				{
 				if ((t[0]->payload.p_int_array.data = (int32_t *)calloc(t[0]->payload.p_int_array.size,4)) == NULL)
 					{
-					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 					return -1;
 					}
 				for (i=0; i < t[0]->payload.p_int_array.size; i++)
@@ -300,7 +293,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				}
 			break;
 		default:
-			fprintf(stderr,"%s ERROR: unknown tag id\n",NBT_LIBNAME);
+			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id");
 			return -1;
 			break;
 		}
@@ -308,7 +301,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 	//check input range
 	if (nextin > limit)
 		{
-		fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+		snprintf(nbt_error,NBT_MAXSTR,"premature end of stream");
 		return -1;
 		}
 	return nextin;
@@ -422,21 +415,44 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	FILE *f;
 	struct stat fs;
 	uint8_t *b;
+	int i;
 	
+	//open file...
 	if ((f = fopen(fn,"r")) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
 		return NULL;
+		}
+	//determine filesize...
 	if (fstat(fileno(f),&fs) != 0)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fstat() on \'%s\': %s",fn,strerror(errno));
 		return NULL;
+		}
+	//allocate buffer...
 	if ((b = (uint8_t *)calloc(fs.st_size,1)) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 		return NULL;
-	if (fread(b,1,fs.st_size,f) != fs.st_size)
+		}
+	//copy file to buffer...
+	if ((i = fread(b,1,fs.st_size,f)) != fs.st_size)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),(unsigned int)fs.st_size-i,fn);
 		return NULL;
+		}
+	//don't need this anymore...
 	fclose(f);
+	//parse buffer...
 	if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_UNKNOWN)) == NULL)
 		{
 		if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_NONE)) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"couldn't determine how to read \'%s\'; file corrupted?",fn);
 			return NULL;
+			}
 		}
+	//don't need this anymore...
 	free(b);
 	
 	return t;
