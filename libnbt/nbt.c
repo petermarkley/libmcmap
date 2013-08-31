@@ -101,6 +101,10 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 	int32_t num;
 	int ret, i;
 	struct nbt_tag **loop;
+	uint32_t tmp1;
+	uint64_t tmp2;
+	float *p1;
+	double *p2;
 	
 	//allocate tag
 	if ((t[0] = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
@@ -174,14 +178,16 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			nextin += 8;
 			break;
 		case NBT_FLOAT:
-			//FIXME - account for endianness
-			memcpy(&(t[0]->payload.p_float),&(input[nextin]),4);
+			tmp1 = cswap_32(&(input[nextin]));
+			p1 = (float *)&tmp1;
 			nextin += 4;
+			t[0]->payload.p_float = *p1;
 			break;
 		case NBT_DOUBLE:
-			//FIXME - account for endianness
-			memcpy(&(t[0]->payload.p_double),&(input[nextin]),8);
+			tmp2 = cswap_64(&(input[nextin]));
+			p2 = (double *)&tmp2;
 			nextin += 8;
+			t[0]->payload.p_double = *p2;
 			break;
 		case NBT_BYTE_ARRAY:
 			t[0]->payload.p_byte_array.size = cswap_32(&(input[nextin]));
