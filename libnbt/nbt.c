@@ -92,13 +92,17 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 //read a 16-bit, signed, big-endian integer from the given point in memory
 int16_t _nbt_get_short(uint8_t *input)
 	{
-	return ( ((int16_t)(input[0])<<8) + (int16_t)(input[1]) );
+	return ( ((((int16_t)input[0])<<8)&0xFF00) +
+	          (((int16_t)input[1])    &0x00FF) );
 	}
 
 //read a 32-bit, signed, big-endian integer from the given point in memory
 int32_t _nbt_get_int(uint8_t *input)
 	{
-	return ( ((int32_t)(input[0])<<24) + ((int32_t)(input[1])<<16) + ((int32_t)(input[2])<<8) + (int32_t)(input[3]) );
+	return ( ((((int32_t)input[0])<<24)&0xFF000000) +
+	         ((((int32_t)input[1])<<16)&0x00FF0000) +
+	         ((((int32_t)input[2])<< 8)&0x0000FF00) +
+	         ((((int32_t)input[3])     &0x000000FF) );
 	}
 
 //take pointer to binary data 'input' of size 'limit';
@@ -178,14 +182,14 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			break;
 		case NBT_LONG:
 			t[0]->payload.p_long =
-				( ((int64_t)(input[nextin  ])<<56) +
-				  ((int64_t)(input[nextin+1])<<48) +
-				  ((int64_t)(input[nextin+2])<<40) +
-				  ((int64_t)(input[nextin+3])<<32) +
-				  ((int64_t)(input[nextin+4])<<24) +
-				  ((int64_t)(input[nextin+5])<<16) +
-				  ((int64_t)(input[nextin+6])<< 8) +
-				   (int64_t)(input[nextin+7]) );
+				( ((((int64_t)input[nextin  ])<<56)&0xFF00000000000000) +
+				  ((((int64_t)input[nextin+1])<<48)&0x00FF000000000000) +
+				  ((((int64_t)input[nextin+2])<<40)&0x0000FF0000000000) +
+				  ((((int64_t)input[nextin+3])<<32)&0x000000FF00000000) +
+				  ((((int64_t)input[nextin+4])<<24)&0x00000000FF000000) +
+				  ((((int64_t)input[nextin+5])<<16)&0x0000000000FF0000) +
+				  ((((int64_t)input[nextin+6])<< 8)&0x000000000000FF00) +
+				   (((int64_t)input[nextin+7])     &0x00000000000000FF) );
 			nextin += 8;
 			break;
 		case NBT_FLOAT:
