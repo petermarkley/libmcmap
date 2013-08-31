@@ -69,9 +69,16 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 			if (r->header->locations[z][x].sector_count > 0)
 				{
 				//extract big-endian 32-bit integer from r->header->dates[z][x]
-				r->dates[z][x] = (((uint32_t)(r->header->dates[z][x][0]))<<24) + (((uint32_t)(r->header->dates[z][x][1]))<<16) + (((uint32_t)(r->header->dates[z][x][2]))<<8) + ((uint32_t)(r->header->dates[z][x][3]));
+				r->dates[z][x] =
+					( ((((uint32_t)r->header->dates[z][x][0])<<24)&0xFF000000) +
+					  ((((uint32_t)r->header->dates[z][x][1])<<16)&0x00FF0000) +
+					  ((((uint32_t)r->header->dates[z][x][2])<< 8)&0x0000FF00) +
+					   (((uint32_t)r->header->dates[z][x][3])     &0x000000FF) );
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				l = (((uint32_t)(r->header->locations[z][x].offset[0]))<<16) + (((uint32_t)(r->header->locations[z][x].offset[1]))<<8) + ((uint32_t)(r->header->locations[z][x].offset[2]));
+				l =
+					( ((((uint32_t)r->header->locations[z][x].offset[0])<<16)&0xFF0000) +
+					  ((((uint32_t)r->header->locations[z][x].offset[1])<< 8)&0x00FF00) +
+					   (((uint32_t)r->header->locations[z][x].offset[2])     &0x0000FF) );
 				
 				//chunk listing should not point anywhere in the file header
 				if (l < 2)
@@ -86,7 +93,11 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 					//connect 5-byte chunk header
 					r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
 					//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
-					r->chunks[z][x].size = (unsigned int)( (((uint32_t)(buff[i]))<<24) + (((uint32_t)(buff[i+1]))<<16) + (((uint32_t)(buff[i+2]))<<8) + ((uint32_t)(buff[i+3])) ) - 1;
+					r->chunks[z][x].size =
+						(size_t)( (((((uint32_t)buff[i  ]))<<24)&0xFF000000) +
+						          (((((uint32_t)buff[i+1]))<<16)&0x00FF0000) +
+						          (((((uint32_t)buff[i+2]))<<8 )&0x0000FF00) +
+						           ((((uint32_t)buff[i+3])))    &0x000000FF) ) - 1;
 					//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
 					r->chunks[z][x].data = &(buff[i+5]);
 					
