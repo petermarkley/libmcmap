@@ -462,10 +462,8 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 			snprintf(b,NBT_MAXSTR,"+-- ");
 		else
 			snprintf(b,NBT_MAXSTR,"L-- ");
+		fprintf(f," %s%s",c,b);
 		}
-	else
-		b[0] = '\0';
-	fprintf(f," %s%s",c,b);
 	
 	//tag type
 	switch (t->type)
