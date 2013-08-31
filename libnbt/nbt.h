@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #define NBT_LIBNAME "libnbt"
+#define NBT_MAXSTR 2048
 
 //interpreting and encoding NBT file format < http://www.minecraftwiki.net/wiki/NBT_format >
 //wrtten by Peter Markley, copyright 2013
@@ -78,5 +79,8 @@ void nbt_free_all(struct nbt_tag *);
 
 //free one tag and its children from the linked structure and repair surrounding links
 void nbt_free_one(struct nbt_tag *);
+
+//print textual representation of NBT structure to the given FILE stream
+void nbt_print(FILE *, struct nbt_tag *);
 
 #endif

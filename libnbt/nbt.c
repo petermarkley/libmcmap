@@ -343,7 +343,7 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		input = comp;
 		input_sz = comp_sz;
 		}
-	fprintf(stderr,"\tYAY! we might have %d bytes of uncompressed data now at %p!\n",(int)input_sz,input);
+	
 	//an NBT file is one big compound tag
 	if (_nbt_tag_read(input,input_sz,&t,NULL,0) == -1)
 		return NULL;
@@ -424,5 +424,101 @@ void nbt_free_one(struct nbt_tag *t)
 		//ok we're untangled... now we can delete
 		nbt_free_all(t);
 		}
+	return;
+	}
+
+//print textual representation of NBT structure to the given FILE stream
+void nbt_print(FILE *f, struct nbt_tag *t)
+	{
+	char c[NBT_MAXSTR];
+	char b[NBT_MAXSTR];
+	struct nbt_tag *probe;
+	int i;
+	
+	if (t == NULL)
+		return;
+	c[0] = '\0';
+	
+	//formatting prefix
+	/*if (t->parent != NULL)
+		{
+		snprintf(b,NBT_MAXSTR,"+-->");
+		for (probe = t->parent; probe->parent != NULL; probe = probe->parent)
+			snprintf(c,NBT_MAXSTR,"%s   %s",((probe->next_sib != NULL)?"|":" "),c); //for each level above this tag prepend spaces, and a vertical bar if there are more siblings
+		}
+	else
+		b[0] = '\0';
+	fprintf(f,"%s%s ",c,b);*/
+	for (probe = t; probe->parent != NULL; probe = probe->parent)
+		{
+		if (probe != t)
+			{
+			if (probe->next_sib != NULL)
+				snprintf(b,NBT_MAXSTR,"|    %s",c);
+			else
+				snprintf(b,NBT_MAXSTR,"     %s",c);
+			}
+		else
+			{
+			if (probe->next_sib != NULL)
+				snprintf(b,NBT_MAXSTR,"+-- ");
+			else
+				snprintf(b,NBT_MAXSTR,"L-- ");
+			}
+		strncpy(c,b,NBT_MAXSTR);
+		}
+	fprintf(f," %s",c);
+	
+	//tag type
+	switch (t->type)
+		{
+		case NBT_BYTE:       fprintf(f,"Byte");       break;
+		case NBT_SHORT:      fprintf(f,"Short");      break;
+		case NBT_INT:        fprintf(f,"Int");        break;
+		case NBT_LONG:       fprintf(f,"Long");       break;
+		case NBT_FLOAT:      fprintf(f,"Float");      break;
+		case NBT_DOUBLE:     fprintf(f,"Double");     break;
+		case NBT_BYTE_ARRAY: fprintf(f,"Byte Array"); break;
+		case NBT_STRING:     fprintf(f,"String");     break;
+		case NBT_LIST:       fprintf(f,"List");       break;
+		case NBT_COMPOUND:   fprintf(f,"Compound");   break;
+		case NBT_INT_ARRAY:  fprintf(f,"Int Array");  break;
+		default: break;
+		}
+	
+	//tag name
+	if (t->name != NULL)
+		fprintf(f," \"%s\":  ",t->name);
+	else
+		fprintf(f,":  ");
+	
+	//payload
+	switch (t->type)
+		{
+		case NBT_BYTE:   fprintf(f,"%02x",t->payload.p_byte);  break;
+		case NBT_SHORT:  fprintf(f,"%d",t->payload.p_short);   break;
+		case NBT_INT:    fprintf(f,"%d",t->payload.p_int);     break;
+		case NBT_LONG:   fprintf(f,"%ld",(long)t->payload.p_long);   break;
+		case NBT_FLOAT:  fprintf(f,"%f",t->payload.p_float);   break;
+		case NBT_DOUBLE: fprintf(f,"%lf",t->payload.p_double); break;
+		case NBT_BYTE_ARRAY:
+			fprintf(f,"**FIXME");
+			break;
+		case NBT_STRING:    fprintf(f,"%s",((t->payload.p_string != NULL)?t->payload.p_string:"(null)")); break;
+		case NBT_LIST: break;
+		case NBT_COMPOUND: break;
+		case NBT_INT_ARRAY: fprintf(f,"**FIXME"); break;
+		default: break;
+		}
+	
+	fprintf(f,"\n");
+	
+	//children
+	if (t->firstchild != NULL)
+		nbt_print(f,t->firstchild);
+	//subsequent siblings
+	if (t->next_sib != NULL)
+		nbt_print(f,t->next_sib);
+	
 	return;
 	}
