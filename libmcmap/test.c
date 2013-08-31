@@ -8,10 +8,10 @@
 
 int main(int argc, char **argv)
 	{
-	struct mcmap_region *r;
-	unsigned int x,z;
+	//struct mcmap_region *r;
+	//unsigned int x,z;
 	struct nbt_tag *t;
-	
+	/*
 	if ((r = mcmap_region_read(0,0,INP_MAP)) == NULL)
 		{
 		fprintf(stderr,"couldn't parse \'%s\' for some reason\n",INP_MAP);
@@ -28,7 +28,13 @@ int main(int argc, char **argv)
 		nbt_print_ascii(stdout,t,3,10);
 		fprintf(stdout,"\n");
 		nbt_free_all(t);
-		}
+		}*/
+	
+	t = nbt_file_read("test_map/saves/Experiment Lab/level.dat");
+	fprintf(stdout,"\n");
+	nbt_print_ascii(stdout,t,3,10);
+	fprintf(stdout,"\n");
+	nbt_free_all(t);
 	
 	return 0;
 	}

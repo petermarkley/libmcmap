@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -412,6 +413,33 @@ void nbt_free_one(struct nbt_tag *t)
 		nbt_free_all(t);
 		}
 	return;
+	}
+
+//load an NBT structure from a file on the disk
+struct nbt_tag *nbt_file_read(const char *fn)
+	{
+	struct nbt_tag *t;
+	FILE *f;
+	struct stat fs;
+	uint8_t *b;
+	
+	if ((f = fopen(fn,"r")) == NULL)
+		return NULL;
+	if (fstat(fileno(f),&fs) != 0)
+		return NULL;
+	if ((b = (uint8_t *)calloc(fs.st_size,1)) == NULL)
+		return NULL;
+	if (fread(b,1,fs.st_size,f) != fs.st_size)
+		return NULL;
+	fclose(f);
+	if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_UNKNOWN)) == NULL)
+		{
+		if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_NONE)) == NULL)
+			return NULL;
+		}
+	free(b);
+	
+	return t;
 	}
 
 //print ASCII representation of NBT structure to the given FILE stream;
