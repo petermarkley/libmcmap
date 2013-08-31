@@ -431,13 +431,15 @@ void nbt_free_one(struct nbt_tag *t)
 	return;
 	}
 
-//print textual representation of NBT structure to the given FILE stream
-void nbt_print(FILE *f, struct nbt_tag *t)
+//print ASCII representation of NBT structure to the given FILE stream;
+//print arrays with 'width' items per line;
+//stop printing after 'maxlines' lines (-1 for unlimited)
+void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	{
 	char c[NBT_MAXSTR];
 	char b[NBT_MAXSTR];
 	struct nbt_tag *probe;
-	int i;
+	int i,j;
 	
 	if (t == NULL)
 		return;
@@ -464,6 +466,10 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 			snprintf(b,NBT_MAXSTR,"L-- ");
 		fprintf(f," %s%s",c,b);
 		}
+	if (t->next_sib != NULL)
+		snprintf(b,NBT_MAXSTR,"|    ");
+	else
+		snprintf(b,NBT_MAXSTR,"     ");
 	
 	//tag type
 	switch (t->type)
@@ -498,12 +504,56 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 		case NBT_FLOAT:  fprintf(f,"%f",t->payload.p_float);   break;
 		case NBT_DOUBLE: fprintf(f,"%lf",t->payload.p_double); break;
 		case NBT_BYTE_ARRAY:
-			fprintf(f,"**FIXME");
+			fprintf(f,"(%d items)",t->payload.p_byte_array.size);
+			j=0; //'i' is array index, 'j' is a line counter
+			if (maxlines != 0)
+				{
+				for (i=0; i < t->payload.p_byte_array.size;)
+					{
+					fprintf(f,"\n %s%s    %02x",c,b,(uint8_t)t->payload.p_byte_array.data[i++]);
+					while (i%width > 0 && i < t->payload.p_byte_array.size)
+						fprintf(f," %02x",(uint8_t)t->payload.p_byte_array.data[i++]);
+					j++;
+					if (maxlines > 0)
+						{
+						if (j >= maxlines)
+							{
+							i = t->payload.p_byte_array.size; //end loop
+							fprintf(f,"\n %s%s    . . .",c,b); //drop ellipsis
+							}
+						}
+					}
+				}
+			else
+				fprintf(f," . . .");
 			break;
 		case NBT_STRING:    fprintf(f,"%s",((t->payload.p_string != NULL)?t->payload.p_string:"(null)")); break;
 		case NBT_LIST: break;
 		case NBT_COMPOUND: break;
-		case NBT_INT_ARRAY: fprintf(f,"**FIXME"); break;
+		case NBT_INT_ARRAY:
+			fprintf(f,"(%d items)",t->payload.p_int_array.size);
+			j=0; //'i' is array index, 'j' is a line counter
+			if (maxlines != 0)
+				{
+				for (i=0; i < t->payload.p_int_array.size;)
+					{
+					fprintf(f,"\n %s%s    %d",c,b,t->payload.p_int_array.data[i++]);
+					while (i%width > 0 && i < t->payload.p_int_array.size)
+						fprintf(f," %d",t->payload.p_int_array.data[i++]);
+					j++;
+					if (maxlines > 0)
+						{
+						if (j >= maxlines)
+							{
+							i = t->payload.p_int_array.size; //end loop
+							fprintf(f,"\n %s%s    . . .",c,b); //drop ellipsis
+							}
+						}
+					}
+				}
+			else
+				fprintf(f," . . .");
+			break;
 		default: break;
 		}
 	
@@ -511,10 +561,10 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 	
 	//children
 	if (t->firstchild != NULL)
-		nbt_print(f,t->firstchild);
+		nbt_print_ascii(f,t->firstchild,maxlines,width);
 	//subsequent siblings
 	if (t->next_sib != NULL)
-		nbt_print(f,t->next_sib);
+		nbt_print_ascii(f,t->next_sib,maxlines,width);
 	
 	return;
 	}

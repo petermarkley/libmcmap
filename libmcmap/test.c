@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		t = mcmap_chunk_read(&(r->chunks[z][x]));
 		mcmap_region_free(r);
 		fprintf(stdout,"\nNBT data from chunk (%u,%u):\n\n",x,z);
-		nbt_print(stdout,t);
+		nbt_print_ascii(stdout,t,3,40);
 		fprintf(stdout,"\n");
 		nbt_free_all(t);
 		}

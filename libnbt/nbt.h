@@ -80,7 +80,9 @@ void nbt_free_all(struct nbt_tag *);
 //free one tag and its children from the linked structure and repair surrounding links
 void nbt_free_one(struct nbt_tag *);
 
-//print textual representation of NBT structure to the given FILE stream
-void nbt_print(FILE *, struct nbt_tag *);
+//print ASCII representation of NBT structure to the given FILE stream;
+//print arrays with 'width' items per line;
+//stop printing after 'maxlines' lines (-1 for unlimited)
+void nbt_print_ascii(FILE *, struct nbt_tag *, int maxlines, int width);
 
 #endif
