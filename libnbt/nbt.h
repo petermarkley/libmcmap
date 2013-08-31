@@ -16,8 +16,8 @@ typedef enum //tag type
 	NBT_SHORT      =  2, //16-bit, signed, big-endian integer
 	NBT_INT        =  3, //32-bit, signed, big-endian integer
 	NBT_LONG       =  4, //64-bit, signed, big-endian integer
-	NBT_FLOAT      =  5, //32-bit, signed, big-endian floating point
-	NBT_DOUBLE     =  6, //64-bit, signed, big-endian floating point
+	NBT_FLOAT      =  5, //32-bit, signed, big-endian IEEE 754-2008 'binary32' < http://en.wikipedia.org/wiki/Single_precision_floating-point_format >
+	NBT_DOUBLE     =  6, //64-bit, signed, big-endian IEEE 754-2008 'binary64' < http://en.wikipedia.org/wiki/Double_precision_floating-point_format >
 	NBT_BYTE_ARRAY =  7, //one NBT_INT payload followed by that many payloads of type NBT_BYTE
 	NBT_STRING     =  8, //one NBT_SHORT payload followed by that many bytes of UTF-8 text
 	NBT_LIST       =  9, //one NBT_BYTE payload signifying a tag id, then one NBT_INT payload, then that many payloads of that type
@@ -53,27 +53,30 @@ struct nbt_tag
 			{
 			int32_t size;
 			int8_t *data;
-			}    p_byte_array;
+			}     p_byte_array;
 		char     *p_string;
 		nbt_tagid p_list; //lists are treated as compound tags for simplicity
 		struct nbt_tag_int_array
 			{
 			int32_t size;
 			int32_t *data;
-			}    p_int_array;
+			}     p_int_array;
 		} payload;
 	
 	struct nbt_tag *parent; //only for the root tag will this be NULL
 	struct nbt_tag *prev_sib;
 	struct nbt_tag *next_sib;
-	struct nbt_tag *children; //NULL for all but compound tags or lists; will allocate array of size 'children_num'
-	unsigned int children_num; //0 for all but compound tags or lists
+	struct nbt_tag *firstchild; //NULL for all but compound tags or lists; will allocate array of size 'children_num'
+	//unsigned int children_num; //0 for all but compound tags or lists
 	};
 
 //create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
 struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type compress_type);
 
-//free memory allocated in 'nbt_decode()' or 'nbt_new()'
-void nbt_free(struct nbt_tag *);
+//free entire tag structure
+void nbt_free_all(struct nbt_tag *);
+
+//free one tag and its children from the linked structure and repair surrounding links
+void nbt_free_one(struct nbt_tag *);
 
 #endif

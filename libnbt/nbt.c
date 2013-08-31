@@ -101,110 +101,221 @@ int32_t _nbt_get_int(uint8_t *input)
 	return ( ((int32_t)(input[0])<<24) + ((int32_t)(input[1])<<16) + ((int32_t)(input[2])<<8) + (int32_t)(input[3]) );
 	}
 
-//create tag from binary input and return pointer to it
-struct nbt_tag *_nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag *parent, uint8_t islist)
+//take pointer to binary data 'input' of size 'limit';
+//  allocate and populate nbt_tag pointed at by 't[0]' (owned by calling function
+//  so they'll have access to it when we're done) whose parent should be 'parent' (NULL if root tag);
+//  boolean 'islist' flag indicates whether tag should be an NBT_LIST;
+//  return number of input bytes consumed, -1 on error
+int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_tag *parent, uint8_t islist)
 	{
-	struct nbt_tag *t;
 	unsigned int nextin = 0;
-	uint32_t num;
-	if ((t = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
+	int32_t num;
+	int ret, i;
+	struct nbt_tag **loop;
+	
+	//allocate tag
+	if ((t[0] = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
 		{
 		fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
-		return NULL;
+		return -1;
 		}
-	t->parent = parent;
-	t->islist = islist;
+	//populate immediately known info
+	t[0]->parent = parent;
+	t[0]->islist = islist;
 	
+	//populate type and name
 	if (islist) //if we're a member of a list, we have no name or independent tagid
 		{
 		if (parent == NULL) //the file root should not be a list
 			{
 			fprintf(stderr,"%s ERROR: list item with NULL parent\n",NBT_LIBNAME);
-			return NULL;
+			return -1;
 			}
-		t->type = parent->payload.p_list;
-		t->name = NULL;
+		t[0]->type = parent->payload.p_list;
+		t[0]->name = NULL;
 		}
 	else
 		{
 		//first byte of the tag is the ID
-		t->type = input[nextin++];
+		t[0]->type = input[nextin++];
 		//next two bytes are bytesize of name, followed by the name itself
 		num = _nbt_get_short(&(input[nextin]));
 		nextin += 2;
 		//allocate space for name
-		if ((t->name = (char *)calloc(num,sizeof(char))) == NULL)
+		if ((t[0]->name = (char *)calloc(num,1)) == NULL)
 			{
 			fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
-			return NULL;
+			return -1;
 			}
 		//store name
-		memcpy(t->name,&(input[nextin]),num);
+		memcpy(t[0]->name,&(input[nextin]),num);
 		nextin += num;
 		//check range of input
 		if (nextin >= limit)
 			{
 			fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
-			return NULL;
+			return -1;
 			}
 		}
 	
 	//populate payload
-	switch(t->type)
+	switch(t[0]->type)
 		{
 		case NBT_END:
 			fprintf(stderr,"%s ERROR: unexpected compound tag terminator\n",NBT_LIBNAME);
-			return NULL;
+			return -1;
 			break;
 		case NBT_BYTE:
-			t->payload.p_byte = input[nextin++];
+			t[0]->payload.p_byte = input[nextin++];
 			break;
 		case NBT_SHORT:
-			t->payload.p_short = _nbt_get_short(&(input[nextin]));
+			t[0]->payload.p_short = _nbt_get_short(&(input[nextin]));
 			nextin += 2;
 			break;
 		case NBT_INT:
-			t->payload.p_int = _nbt_get_int(&(input[nextin]));
+			t[0]->payload.p_int = _nbt_get_int(&(input[nextin]));
 			nextin += 4;
 			break;
 		case NBT_LONG:
-			
+			t[0]->payload.p_long =
+				( ((int64_t)(input[nextin  ])<<56) +
+				  ((int64_t)(input[nextin+1])<<48) +
+				  ((int64_t)(input[nextin+2])<<40) +
+				  ((int64_t)(input[nextin+3])<<32) +
+				  ((int64_t)(input[nextin+4])<<24) +
+				  ((int64_t)(input[nextin+5])<<16) +
+				  ((int64_t)(input[nextin+6])<< 8) +
+				   (int64_t)(input[nextin+7]) );
+			nextin += 8;
 			break;
 		case NBT_FLOAT:
-			
+			//FIXME
 			break;
 		case NBT_DOUBLE:
-			
+			//FIXME
 			break;
 		case NBT_BYTE_ARRAY:
-			
+			t[0]->payload.p_byte_array.size = _nbt_get_int(&(input[nextin]));
+			nextin += 4;
+			if (t[0]->payload.p_byte_array.size > 0)
+				{
+				if ((t[0]->payload.p_byte_array.data = (int8_t *)calloc(t[0]->payload.p_byte_array.size,1)) == NULL)
+					{
+					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					return -1;
+					}
+				memcpy(t[0]->payload.p_byte_array.data,&(input[nextin]),t[0]->payload.p_byte_array.size);
+				nextin += t[0]->payload.p_byte_array.size;
+				}
 			break;
 		case NBT_STRING:
-			
+			num = _nbt_get_short(&(input[nextin]));
+			nextin += 2;
+			if (num > 0)
+				{
+				if ((t[0]->payload.p_string = (char *)calloc(num,1)) == NULL)
+					{
+					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					return -1;
+					}
+				memcpy(t[0]->payload.p_string,&(input[nextin]),num);
+				nextin += num;
+				}
 			break;
 		case NBT_LIST:
-			
+			t[0]->payload.p_list = input[nextin++];
+			num = _nbt_get_int(&(input[nextin]));
+			nextin += 4;
+			if (num > 0)
+				{
+				//allocate the first child at 't[0]->firstchild'
+				loop = &(t[0]->firstchild);
+				//read exactly 'num' number of children
+				for (i=0; i<num; i++)
+					{
+					//read tag
+					ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0],1);
+					//recognize error condition
+					if (ret == -1)
+						return -1;
+					//mark consumed input bytes
+					nextin += ret;
+					//check input range
+					if (nextin >= limit)
+						{
+						fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+						return -1;
+						}
+					//allocate next child as sibling of this one
+					loop = &(loop[0]->next_sib);
+					}
+				//close the linked list
+				for (loop = &(t[0]->firstchild); loop[0]->next_sib != NULL; loop = &(loop[0]->next_sib))
+					loop[0]->next_sib->prev_sib = loop[0];
+				}
 			break;
 		case NBT_COMPOUND:
-			t->children = _nbt_tag_read(input,limit-nextin,t,0);
-			//FIXME need for loop here until we encounter NBT_END
+			//allocate the first child at 't[0]->firstchild'
+			loop = &(t[0]->firstchild);
+			
+			//keep reading children until we encounter an 'NBT_END' tag
+			while (input[nextin] != NBT_END)
+				{
+				//read tag
+				ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0],0);
+				//recognize error condition
+				if (ret == -1)
+					return -1;
+				//mark consumed input bytes
+				nextin += ret;
+				//check input range
+				if (nextin >= limit)
+					{
+					fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
+					return -1;
+					}
+				//allocate next child as sibling of this one
+				loop = &(loop[0]->next_sib);
+				}
+			
+			//close the linked list
+			for (loop = &(t[0]->firstchild); loop[0]->next_sib != NULL; loop = &(loop[0]->next_sib))
+				loop[0]->next_sib->prev_sib = loop[0];
+			
+			//mark ending byte as consumed
+			nextin++;
+			
 			break;
 		case NBT_INT_ARRAY:
-			
+			t[0]->payload.p_int_array.size = _nbt_get_int(&(input[nextin]));
+			nextin += 4;
+			if (t[0]->payload.p_int_array.size > 0)
+				{
+				if ((t[0]->payload.p_int_array.data = (int32_t *)calloc(t[0]->payload.p_int_array.size,4)) == NULL)
+					{
+					fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+					return -1;
+					}
+				for (i=0; i < t[0]->payload.p_int_array.size; i++)
+					{
+					t[0]->payload.p_int_array.data[i] = _nbt_get_int(&(input[nextin]));
+					nextin += 4;
+					}
+				}
 			break;
 		default:
 			fprintf(stderr,"%s ERROR: unknown tag id\n",NBT_LIBNAME);
-			return NULL;
+			return -1;
 			break;
 		}
 	
-	//check range of input
+	//check input range
 	if (nextin > limit)
 		{
 		fprintf(stderr,"%s ERROR: premature end of stream\n",NBT_LIBNAME);
-		return NULL;
+		return -1;
 		}
-	return t;
+	return nextin;
 	}
 
 //create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
@@ -226,16 +337,83 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		}
 	fprintf(stderr,"\tYAY! we might have %d bytes of uncompressed data now at %p!\n",(int)input_sz,input);
 	//an NBT file is one big compound tag
-	t = _nbt_tag_read(input,input_sz,NULL,0);
+	if (_nbt_tag_read(input,input_sz,&t,NULL,0) == -1)
+		return NULL;
 	
 	if (input != comp) //don't free comp because we didn't allocate it
 		free(input); //we only allocated if we ran it through zlib
 	return t;
 	}
 
-//free memory allocated in 'nbt_decode()' or 'nbt_new()'
-void nbt_free(struct nbt_tag *t)
+//free entire tag structure
+void nbt_free_all(struct nbt_tag *t)
 	{
-	//FIXME
+	if (t != NULL)
+		{
+		//children (parent is presumably being freed by the previous iteration)
+		if (t->firstchild != NULL)
+			nbt_free_all(t->firstchild);
+		//subsequent siblings (previous siblings are being freed by the previous iteration)
+		if (t->next_sib != NULL)
+			nbt_free_all(t->next_sib);
+		//name
+		if (t->name != NULL)
+			free(t->name);
+		//payload
+		switch(t->type) //don't test for NULL on union members that weren't used; the memory space was still used since it's a union, right? test would have unpredictable results
+			{
+			case NBT_BYTE_ARRAY:
+				if (t->payload.p_byte_array.data != NULL)
+					free(t->payload.p_byte_array.data);
+				break;
+			case NBT_STRING:
+				if (t->payload.p_string != NULL)
+					free(t->payload.p_string);
+				break;
+			case NBT_INT_ARRAY:
+				if (t->payload.p_int_array.data != NULL)
+					free(t->payload.p_int_array.data);
+				break;
+			}
+		//whole tag
+		free(t);
+		}
+	return;
+	}
+
+//free one tag and its children from the linked structure and repair surrounding links
+void nbt_free_one(struct nbt_tag *t)
+	{
+	if (t != NULL)
+		{
+		if (t->prev_sib == NULL) //is this the first child?
+			{
+			if (t->next_sib != NULL) //are there other children?
+				{
+				t->next_sib->prev_sib = NULL;
+				if (t->parent != NULL)
+					t->parent->firstchild = t->next_sib;
+				}
+			else
+				if (t->parent != NULL)
+					t->parent->firstchild = NULL;
+			}
+		else //not the first child
+			{
+			if (t->next_sib != NULL) //are there later children?
+				{
+				t->prev_sib->next_sib = t->next_sib;
+				t->next_sib->prev_sib = t->prev_sib;
+				}
+			else
+				t->prev_sib->next_sib = NULL;
+			}
+		t->prev_sib = NULL;
+		t->next_sib = NULL;
+		t->parent = NULL;
+		
+		//ok we're untangled... now we can delete
+		nbt_free_all(t);
+		}
 	return;
 	}
