@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "mcmap.h"
 #include "libnbt/nbt.h"
+#include "cswap.h"
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
@@ -69,16 +70,9 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 			if (r->header->locations[z][x].sector_count > 0)
 				{
 				//extract big-endian 32-bit integer from r->header->dates[z][x]
-				r->dates[z][x] =
-					( ((((uint32_t)r->header->dates[z][x][0])<<24)&0xFF000000) +
-					  ((((uint32_t)r->header->dates[z][x][1])<<16)&0x00FF0000) +
-					  ((((uint32_t)r->header->dates[z][x][2])<< 8)&0x0000FF00) +
-					   (((uint32_t)r->header->dates[z][x][3])     &0x000000FF) );
+				r->dates[z][x] = cswap_32(&(r->header->dates[z][x]));
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				l =
-					( ((((uint32_t)r->header->locations[z][x].offset[0])<<16)&0xFF0000) +
-					  ((((uint32_t)r->header->locations[z][x].offset[1])<< 8)&0x00FF00) +
-					   (((uint32_t)r->header->locations[z][x].offset[2])     &0x0000FF) );
+				l = cswap_24(&(r->header->locations[z][x].offset));
 				
 				//chunk listing should not point anywhere in the file header
 				if (l < 2)
@@ -93,11 +87,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 					//connect 5-byte chunk header
 					r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
 					//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
-					r->chunks[z][x].size =
-						(size_t)( ((((uint32_t)buff[i  ])<<24)&0xFF000000) +
-						          ((((uint32_t)buff[i+1])<<16)&0x00FF0000) +
-						          ((((uint32_t)buff[i+2])<<8 )&0x0000FF00) +
-						           (((uint32_t)buff[i+3])     &0x000000FF) ) - 1;
+					r->chunks[z][x].size = cswap_32(&(buff[i]));
 					//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
 					r->chunks[z][x].data = &(buff[i+5]);
 					

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <zlib.h>
 #include "nbt.h"
+#include "cswap.h"
 
 //operate zlib pipe from input to output, return size of output
 size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_compression_type compress_type)
@@ -89,22 +90,6 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	return output_sz;
 	}
 
-//read a 16-bit, signed, big-endian integer from the given point in memory
-int16_t _nbt_get_short(uint8_t *input)
-	{
-	return ( ((((int16_t)input[0])<<8)&0xFF00) +
-	          (((int16_t)input[1])    &0x00FF) );
-	}
-
-//read a 32-bit, signed, big-endian integer from the given point in memory
-int32_t _nbt_get_int(uint8_t *input)
-	{
-	return ( ((((int32_t)input[0])<<24)&0xFF000000) +
-	         ((((int32_t)input[1])<<16)&0x00FF0000) +
-	         ((((int32_t)input[2])<< 8)&0x0000FF00) +
-	          (((int32_t)input[3])     &0x000000FF) );
-	}
-
 //take pointer to binary data 'input' of size 'limit';
 //  allocate and populate nbt_tag pointed at by 't[0]' (owned by calling function
 //  so they'll have access to it when we're done) whose parent should be 'parent' (NULL if root tag);
@@ -143,7 +128,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		//first byte of the tag is the ID
 		t[0]->type = input[nextin++];
 		//next two bytes are bytesize of name, followed by the name itself
-		num = _nbt_get_short(&(input[nextin]));
+		num = cswap_16(&(input[nextin]));
 		nextin += 2;
 		if (num > 0)
 			{
@@ -177,23 +162,15 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			t[0]->payload.p_byte = input[nextin++];
 			break;
 		case NBT_SHORT:
-			t[0]->payload.p_short = _nbt_get_short(&(input[nextin]));
+			t[0]->payload.p_short = cswap_16(&(input[nextin]));
 			nextin += 2;
 			break;
 		case NBT_INT:
-			t[0]->payload.p_int = _nbt_get_int(&(input[nextin]));
+			t[0]->payload.p_int = cswap_32(&(input[nextin]));
 			nextin += 4;
 			break;
 		case NBT_LONG:
-			t[0]->payload.p_long =
-				( ((((int64_t)input[nextin  ])<<56)&0xFF00000000000000) +
-				  ((((int64_t)input[nextin+1])<<48)&0x00FF000000000000) +
-				  ((((int64_t)input[nextin+2])<<40)&0x0000FF0000000000) +
-				  ((((int64_t)input[nextin+3])<<32)&0x000000FF00000000) +
-				  ((((int64_t)input[nextin+4])<<24)&0x00000000FF000000) +
-				  ((((int64_t)input[nextin+5])<<16)&0x0000000000FF0000) +
-				  ((((int64_t)input[nextin+6])<< 8)&0x000000000000FF00) +
-				   (((int64_t)input[nextin+7])     &0x00000000000000FF) );
+			t[0]->payload.p_long = cswap_64(&(input[nextin]));
 			nextin += 8;
 			break;
 		case NBT_FLOAT:
@@ -207,7 +184,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			nextin += 8;
 			break;
 		case NBT_BYTE_ARRAY:
-			t[0]->payload.p_byte_array.size = _nbt_get_int(&(input[nextin]));
+			t[0]->payload.p_byte_array.size = cswap_32(&(input[nextin]));
 			nextin += 4;
 			if (t[0]->payload.p_byte_array.size > 0)
 				{
@@ -221,7 +198,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				}
 			break;
 		case NBT_STRING:
-			num = _nbt_get_short(&(input[nextin]));
+			num = cswap_16(&(input[nextin]));
 			nextin += 2;
 			if (num > 0)
 				{
@@ -236,7 +213,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			break;
 		case NBT_LIST:
 			t[0]->payload.p_list = input[nextin++];
-			num = _nbt_get_int(&(input[nextin]));
+			num = cswap_32(&(input[nextin]));
 			nextin += 4;
 			if (num > 0)
 				{
@@ -299,7 +276,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			
 			break;
 		case NBT_INT_ARRAY:
-			t[0]->payload.p_int_array.size = _nbt_get_int(&(input[nextin]));
+			t[0]->payload.p_int_array.size = cswap_32(&(input[nextin]));
 			nextin += 4;
 			if (t[0]->payload.p_int_array.size > 0)
 				{
@@ -310,7 +287,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 					}
 				for (i=0; i < t[0]->payload.p_int_array.size; i++)
 					{
-					t[0]->payload.p_int_array.data[i] = _nbt_get_int(&(input[nextin]));
+					t[0]->payload.p_int_array.data[i] = cswap_32(&(input[nextin]));
 					nextin += 4;
 					}
 				}
