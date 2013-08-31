@@ -118,7 +118,7 @@ struct nbt_tag *nbt_file_read(const char *);
 
 //print ASCII representation of NBT structure to the given FILE stream;
 //print arrays with 'width' items per line;
-//stop printing after 'maxlines' lines (-1 for unlimited)
+//stop printing array data after 'maxlines' lines (-1 for unlimited)
 void nbt_print_ascii(FILE *, struct nbt_tag *, int maxlines, int width);
 
 #endif

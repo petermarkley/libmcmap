@@ -40,6 +40,11 @@
 
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
+
+//general definitions
+//-------------------
+//(scroll past for overview documentation)
+
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
 typedef enum
 	{
