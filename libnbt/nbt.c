@@ -102,7 +102,7 @@ int32_t _nbt_get_int(uint8_t *input)
 	return ( ((((int32_t)input[0])<<24)&0xFF000000) +
 	         ((((int32_t)input[1])<<16)&0x00FF0000) +
 	         ((((int32_t)input[2])<< 8)&0x0000FF00) +
-	         ((((int32_t)input[3])     &0x000000FF) );
+	          (((int32_t)input[3])     &0x000000FF) );
 	}
 
 //take pointer to binary data 'input' of size 'limit';
@@ -193,10 +193,14 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			nextin += 8;
 			break;
 		case NBT_FLOAT:
-			//FIXME
+			//FIXME - account for endianness
+			memcpy(&(t[0]->payload.p_float),&(input[nextin]),4);
+			nextin += 4;
 			break;
 		case NBT_DOUBLE:
-			//FIXME
+			//FIXME - account for endianness
+			memcpy(&(t[0]->payload.p_double),&(input[nextin]),8);
+			nextin += 8;
 			break;
 		case NBT_BYTE_ARRAY:
 			t[0]->payload.p_byte_array.size = _nbt_get_int(&(input[nextin]));
@@ -378,6 +382,7 @@ void nbt_free_all(struct nbt_tag *t)
 				if (t->payload.p_int_array.data != NULL)
 					free(t->payload.p_int_array.data);
 				break;
+			default: break;
 			}
 		//whole tag
 		free(t);

@@ -94,10 +94,10 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 					r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
 					//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
 					r->chunks[z][x].size =
-						(size_t)( (((((uint32_t)buff[i  ]))<<24)&0xFF000000) +
-						          (((((uint32_t)buff[i+1]))<<16)&0x00FF0000) +
-						          (((((uint32_t)buff[i+2]))<<8 )&0x0000FF00) +
-						           ((((uint32_t)buff[i+3])))    &0x000000FF) ) - 1;
+						(size_t)( ((((uint32_t)buff[i  ])<<24)&0xFF000000) +
+						          ((((uint32_t)buff[i+1])<<16)&0x00FF0000) +
+						          ((((uint32_t)buff[i+2])<<8 )&0x0000FF00) +
+						           (((uint32_t)buff[i+3])     &0x000000FF) ) - 1;
 					//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
 					r->chunks[z][x].data = &(buff[i+5]);
 					
