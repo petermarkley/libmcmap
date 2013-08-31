@@ -24,7 +24,9 @@ int main(int argc, char **argv)
 		//extract a single chunk and pass it to libnbt!
 		t = mcmap_chunk_read(&(r->chunks[z][x]));
 		mcmap_region_free(r);
+		fprintf(stdout,"\nNBT data from chunk (%u,%u):\n\n",x,z);
 		nbt_print(stdout,t);
+		fprintf(stdout,"\n");
 		nbt_free_all(t);
 		}
 	

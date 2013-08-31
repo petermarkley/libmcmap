@@ -145,15 +145,19 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		//next two bytes are bytesize of name, followed by the name itself
 		num = _nbt_get_short(&(input[nextin]));
 		nextin += 2;
-		//allocate space for name
-		if ((t[0]->name = (char *)calloc(num,1)) == NULL)
+		if (num > 0)
 			{
-			fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
-			return -1;
+			//allocate space for name
+			if ((t[0]->name = (char *)calloc(num+1,1)) == NULL)
+				{
+				fprintf(stderr,"%s ERROR: calloc() returned NULL\n",NBT_LIBNAME);
+				return -1;
+				}
+			//store name
+			memcpy(t[0]->name,&(input[nextin]),num);
+			t[0]->name[num] = '\0';
+			nextin += num;
 			}
-		//store name
-		memcpy(t[0]->name,&(input[nextin]),num);
-		nextin += num;
 		//check range of input
 		if (nextin >= limit)
 			{
@@ -438,17 +442,9 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 	if (t == NULL)
 		return;
 	c[0] = '\0';
+	b[0] = '\0';
 	
 	//formatting prefix
-	/*if (t->parent != NULL)
-		{
-		snprintf(b,NBT_MAXSTR,"+-->");
-		for (probe = t->parent; probe->parent != NULL; probe = probe->parent)
-			snprintf(c,NBT_MAXSTR,"%s   %s",((probe->next_sib != NULL)?"|":" "),c); //for each level above this tag prepend spaces, and a vertical bar if there are more siblings
-		}
-	else
-		b[0] = '\0';
-	fprintf(f,"%s%s ",c,b);*/
 	for (probe = t; probe->parent != NULL; probe = probe->parent)
 		{
 		if (probe != t)
@@ -458,16 +454,18 @@ void nbt_print(FILE *f, struct nbt_tag *t)
 			else
 				snprintf(b,NBT_MAXSTR,"     %s",c);
 			}
-		else
-			{
-			if (probe->next_sib != NULL)
-				snprintf(b,NBT_MAXSTR,"+-- ");
-			else
-				snprintf(b,NBT_MAXSTR,"L-- ");
-			}
 		strncpy(c,b,NBT_MAXSTR);
 		}
-	fprintf(f," %s",c);
+	if (t->parent != NULL)
+		{
+		if (t->next_sib != NULL)
+			snprintf(b,NBT_MAXSTR,"+-- ");
+		else
+			snprintf(b,NBT_MAXSTR,"L-- ");
+		}
+	else
+		b[0] = '\0';
+	fprintf(f," %s%s",c,b);
 	
 	//tag type
 	switch (t->type)
