@@ -158,8 +158,8 @@ void mcmap_region_free(struct mcmap_region *r)
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
-//on simple geometry inquiries; returns NULL on error
-struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmode mode)
+//on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on error
+struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmode mode, int rem)
 	{
 	nbt_compression_type type;
 	struct mcmap_chunk *c;
@@ -377,6 +377,12 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				}
 			}
 		
+		}
+	
+	if (!rem)
+		{
+		nbt_free_all(c->raw);
+		c->raw = NULL;
 		}
 	
 	return c;
