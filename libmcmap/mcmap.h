@@ -315,14 +315,61 @@ void mcmap_region_free(struct mcmap_region *);
 
 //stage 5: native minecraft memory structure
 //------------------------------------------
-/*
+
+//read mode for 'mcmap_chunk_read()'
+typedef enum
+	{
+	MCMAP_READ_PARTIAL, //load only the 'geom' member of 'struct mcmap_chunk' to save memory
+	MCMAP_READ_FULL //load entire 'struct mcmap_chunk' from raw NBT data
+	} mcmap_readmode;
+
+//geometry
+struct mcmap_chunk_geom
+	{
+	uint16_t blocks[256][16][16]; //file specification says this can be 8-bit or 12-bit
+	uint8_t    data[256][16][16]; //block metadata; these are always 4-bit
+	uint8_t  biomes     [16][16]; //these are 8-bit
+	};
+//lighting
+struct mcmap_chunk_light
+	{
+	uint8_t  block[256][16][16]; //4-bit block-emitted light level
+	uint8_t    sky[256][16][16]; //4-bit sky-emitted light level
+	int32_t height     [16][16]; //32-bit lowest Y value in each column where sky-emitted light is full strength
+	};
+//chunk metadata
+struct mcmap_chunk_meta
+	{
+	int64_t mtime; //in-game tick value for when the chunk was saved
+	int8_t populated; //boolean flag for whether minecraft generated special features in this terrain
+	int64_t itime; //cumulative number of player-ticks (like man-hours) that have occurred in this block, used for growing the difficulty
+	};
+//special objects (entities, tile entities, and tile ticks)
+//FIXME - fully implement this rather than point to raw NBT data
+struct mcmap_chunk_special
+	{
+	struct nbt_tag *entities;
+	struct nbt_tag *tile_entities;
+	struct nbt_tag *tile_ticks;
+	};
+
+//containing structure, with NULL-able pointers to save memory
 struct mcmap_chunk
 	{
+	struct mcmap_chunk_geom    *geom;
+	struct mcmap_chunk_light   *light;
+	struct mcmap_chunk_meta    *meta;
+	struct mcmap_chunk_special *special;
 	
+	struct nbt_tag *raw; //optionally retain stage-4 NBT structure
 	};
-*/
-//takes an individual chunk from a 'struct mcmap_region,' returns a parsed root 'nbt_tag'
-//if error returns NULL; free the memory with 'nbt_free()'
-struct nbt_tag *mcmap_chunk_read(struct mcmap_region_chunk *);
+
+//takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
+//'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
+//on simple geometry inquiries; returns NULL on error
+struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode);
+
+//free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'
+void mcmap_chunk_free(struct mcmap_chunk *);
 
 #endif

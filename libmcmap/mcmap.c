@@ -156,17 +156,248 @@ void mcmap_region_free(struct mcmap_region *r)
 	return;
 	}
 
-//takes an individual chunk from a 'struct mcmap_region,' returns a parsed root 'nbt_tag'
-struct nbt_tag *mcmap_chunk_read(struct mcmap_region_chunk *c)
+//takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
+//'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
+//on simple geometry inquiries; returns NULL on error
+struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmode mode)
 	{
-	nbt_compression_type t;
-	if (c == NULL || c->header == NULL)
+	nbt_compression_type type;
+	struct mcmap_chunk *c;
+	struct nbt_tag *t, *p, *l;
+	int8_t y_index;
+	unsigned int x,y,z, i;
+	
+	//don't index into NULL struct
+	if (rc == NULL || rc->header == NULL)
 		return NULL;
-	switch (c->header->compression)
+	//allocate target struct
+	if ((c = (struct mcmap_chunk *)calloc(1,sizeof(struct mcmap_chunk))) == NULL)
 		{
-		case 0x1: t=NBT_COMPRESS_GZIP; break;
-		case 0x2: t=NBT_COMPRESS_ZLIB; break;
-		default: t=NBT_COMPRESS_UNKNOWN; break;
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
 		}
-	return nbt_decode(c->data,c->size,t);
+	//determine compression type
+	switch (rc->header->compression)
+		{
+		case 0x1: type=NBT_COMPRESS_GZIP; break;
+		case 0x2: type=NBT_COMPRESS_ZLIB; break;
+		default: type=NBT_COMPRESS_UNKNOWN; break;
+		}
+	//read input
+	if ((c->raw = nbt_decode(rc->data,rc->size,type)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	
+	//allocate both geometry struct and chunk metadata struct
+	if ((c->geom = (struct mcmap_chunk_geom *)calloc(1,sizeof(struct mcmap_chunk_geom))) == NULL || (c->meta = (struct mcmap_chunk_meta *)calloc(1,sizeof(struct mcmap_chunk_meta))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	//drill past root container
+	if ((t = nbt_find_child(c->raw,NBT_COMPOUND,"Level")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		return NULL;
+		}
+	//read biomes
+	if ((p = nbt_find_child(t,NBT_BYTE_ARRAY,"Biomes")) != NULL)
+		{
+		if (p->payload.p_byte_array.size != 256)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		memcpy(c->geom->biomes,p->payload.p_byte_array.data,256);
+		}
+	//read modified time
+	if ((p = nbt_find_child(t,NBT_LONG,"LastUpdate")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		return NULL;
+		}
+	c->meta->mtime = p->payload.p_long;
+	//read populated flag
+	if ((p = nbt_find_child(t,NBT_BYTE,"TerrainPopulated")) != NULL)
+		c->meta->populated = p->payload.p_byte;
+	else
+		c->meta->populated = 0x00;
+	//read inhabited time
+	if ((p = nbt_find_child(t,NBT_LONG,"InhabitedTime")) != NULL) //this is supposedly a required tag for a chunk, but older maps (pre-1.6.1) won't have them so we won't sound the alarm
+		c->meta->itime = p->payload.p_long;
+	
+	//read optional data
+	if (mode == MCMAP_READ_FULL)
+		{
+		//allocate both lighting info struct and special object struct
+		if ((c->light = (struct mcmap_chunk_light *)calloc(1,sizeof(struct mcmap_chunk_light))) == NULL || (c->special = (struct mcmap_chunk_special *)calloc(1,sizeof(struct mcmap_chunk_special))) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		//height map
+		if ((p = nbt_find_child(t,NBT_INT_ARRAY,"HeightMap")) == NULL || p->payload.p_int_array.size != 256)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		for (z=0;z<16;z++)
+			{
+			for (x=0;x<16;x++)
+				c->light->height[z][x] = p->payload.p_int_array.data[x+(z*16)];
+			}
+		//special objects
+		if ((c->special->entities = nbt_find_child(t,NBT_LIST,"Entities")) == NULL || (c->special->tile_entities = nbt_find_child(t,NBT_LIST,"TileEntities")) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		c->special->tile_ticks = nbt_find_child(t,NBT_LIST,"TileTicks");
+		}
+	
+	//read sections
+	if ((t = nbt_find_child(t,NBT_LIST,"Sections")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		return NULL;
+		}
+	for (l = t->firstchild; l != NULL; l = l->next_sib)
+		{
+		
+		//determine Y index
+		if ((p = nbt_find_child(l,NBT_BYTE,"Y")) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		//store Y index for a minute
+		y_index = p->payload.p_byte;
+		//block IDs
+		if ((p = nbt_find_child(l,NBT_BYTE_ARRAY,"Blocks")) == NULL || p->payload.p_byte_array.size != 4096)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		//no memcpy() this time, our arrays are different types/sizes
+		for (y = y_index*16; y < (y_index+1)*16; y++)
+			{
+			for (z=0;z<16;z++)
+				{
+				for (x=0;x<16;x++)
+					c->geom->blocks[y][z][x] = ((uint16_t)p->payload.p_byte_array.data[x+(z*16)+(y*256)])&0x00FF;
+				}
+			}
+		//optional addition to higher 4 bits for every block ID
+		if ((p = nbt_find_child(l,NBT_BYTE_ARRAY,"Add")) != NULL)
+			{
+			if (p->payload.p_byte_array.size != 2048)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				return NULL;
+				}
+			for (y = y_index*16; y < (y_index+1)*16; y++)
+				{
+				for (z=0;z<16;z++)
+					{
+					for (x=0;x<16;x++)
+						{
+						i = x+(z*16)+(y*256);
+						if (i%2 == 0)
+							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0xF0))<<4)&0x0F00);
+						else
+							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0x0F))<<8)&0x0F00);
+						}
+					}
+				}
+			}
+		//block metadata
+		if ((p = nbt_find_child(l,NBT_BYTE_ARRAY,"Data")) == NULL || p->payload.p_byte_array.size != 2048)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			return NULL;
+			}
+		for (y = y_index*16; y < (y_index+1)*16; y++)
+			{
+			for (z=0;z<16;z++)
+				{
+				for (x=0;x<16;x++)
+					{
+					i = x+(z*16)+(y*256);
+					if (i%2 == 0)
+						c->geom->data[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
+					else
+						c->geom->data[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+					}
+				}
+			}
+		//optional lighting info
+		if (mode == MCMAP_READ_FULL)
+			{
+			//block-emitted light
+			if ((p = nbt_find_child(l,NBT_BYTE_ARRAY,"BlockLight")) == NULL || p->payload.p_byte_array.size != 2048)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				return NULL;
+				}
+			for (y = y_index*16; y < (y_index+1)*16; y++)
+				{
+				for (z=0;z<16;z++)
+					{
+					for (x=0;x<16;x++)
+						{
+						i = x+(z*16)+(y*256);
+						if (i%2 == 0)
+							c->light->block[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
+						else
+							c->light->block[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						}
+					}
+				}
+			//sky-emitted light
+			if ((p = nbt_find_child(l,NBT_BYTE_ARRAY,"SkyLight")) == NULL || p->payload.p_byte_array.size != 2048)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				return NULL;
+				}
+			for (y = y_index*16; y < (y_index+1)*16; y++)
+				{
+				for (z=0;z<16;z++)
+					{
+					for (x=0;x<16;x++)
+						{
+						i = x+(z*16)+(y*256);
+						if (i%2 == 0)
+							c->light->sky[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
+						else
+							c->light->sky[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						}
+					}
+				}
+			}
+		
+		}
+	
+	return c;
+	}
+
+//free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'
+void mcmap_chunk_free(struct mcmap_chunk *c)
+	{
+	if (c != NULL)
+		{
+		if (c->raw != NULL)
+			nbt_free_all(c->raw);
+		if (c->geom != NULL)
+			free(c->geom);
+		if (c->light != NULL)
+			free(c->light);
+		if (c->meta != NULL)
+			free(c->meta);
+		if (c->special != NULL)
+			free(c->special);
+		free(c);
+		}
+	return;
 	}
