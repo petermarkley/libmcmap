@@ -368,6 +368,56 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 	return t;
 	}
 
+//load an NBT structure from a file on the disk
+struct nbt_tag *nbt_file_read(const char *fn)
+	{
+	struct nbt_tag *t;
+	FILE *f;
+	struct stat fs;
+	uint8_t *b;
+	int i;
+	
+	//open file...
+	if ((f = fopen(fn,"r")) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
+		return NULL;
+		}
+	//determine filesize...
+	if (fstat(fileno(f),&fs) != 0)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fstat() on \'%s\': %s",fn,strerror(errno));
+		return NULL;
+		}
+	//allocate buffer...
+	if ((b = (uint8_t *)calloc(fs.st_size,1)) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	//copy file to buffer...
+	if ((i = fread(b,1,fs.st_size,f)) != fs.st_size)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),(unsigned int)fs.st_size-i,fn);
+		return NULL;
+		}
+	//don't need this anymore...
+	fclose(f);
+	//parse buffer...
+	if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_UNKNOWN)) == NULL)
+		{
+		if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_NONE)) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"couldn't determine how to read \'%s\'; file corrupted?",fn);
+			return NULL;
+			}
+		}
+	//don't need this anymore...
+	free(b);
+	
+	return t;
+	}
+
 //free entire tag structure
 void nbt_free_all(struct nbt_tag *t)
 	{
@@ -442,54 +492,29 @@ void nbt_free_one(struct nbt_tag *t)
 	return;
 	}
 
-//load an NBT structure from a file on the disk
-struct nbt_tag *nbt_file_read(const char *fn)
+//locate a particular child of a compound or list tag by its type and name, and return pointer to it
+struct nbt_tag *nbt_find_child(struct nbt_tag *t, nbt_tagid type, const char *name)
 	{
-	struct nbt_tag *t;
-	FILE *f;
-	struct stat fs;
-	uint8_t *b;
-	int i;
-	
-	//open file...
-	if ((f = fopen(fn,"r")) == NULL)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
+	struct nbt_tag *loop;
+	if (t == NULL || t->firstchild == NULL)
 		return NULL;
-		}
-	//determine filesize...
-	if (fstat(fileno(f),&fs) != 0)
+	for (loop = t->firstchild; loop != NULL; loop = loop->next_sib)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"fstat() on \'%s\': %s",fn,strerror(errno));
-		return NULL;
-		}
-	//allocate buffer...
-	if ((b = (uint8_t *)calloc(fs.st_size,1)) == NULL)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
-		return NULL;
-		}
-	//copy file to buffer...
-	if ((i = fread(b,1,fs.st_size,f)) != fs.st_size)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),(unsigned int)fs.st_size-i,fn);
-		return NULL;
-		}
-	//don't need this anymore...
-	fclose(f);
-	//parse buffer...
-	if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_UNKNOWN)) == NULL)
-		{
-		if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_NONE)) == NULL)
+		if (loop->type == type)
 			{
-			snprintf(nbt_error,NBT_MAXSTR,"couldn't determine how to read \'%s\'; file corrupted?",fn);
-			return NULL;
+			if (name == NULL)
+				{
+				if (loop->name == NULL)
+					return loop;
+				}
+			else
+				{
+				if (loop->name != NULL && strcmp(loop->name,name) == 0)
+					return loop;
+				}
 			}
 		}
-	//don't need this anymore...
-	free(b);
-	
-	return t;
+	return NULL;
 	}
 
 //print ASCII representation of NBT structure to the given FILE stream;
