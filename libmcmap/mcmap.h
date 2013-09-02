@@ -310,6 +310,17 @@ void mcmap_region_free(struct mcmap_region *);
 //stages 2-4: parsing gzipped NBT file in memory
 //----------------------------------------------
 
+//these stages are handled by libnbt.
+
+
+//stage 5: native minecraft memory structure
+//------------------------------------------
+/*
+struct mcmap_chunk
+	{
+	
+	};
+*/
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed root 'nbt_tag'
 //if error returns NULL; free the memory with 'nbt_free()'
 struct nbt_tag *mcmap_chunk_read(struct mcmap_region_chunk *);

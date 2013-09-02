@@ -47,7 +47,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	uint8_t *buff;
 	struct mcmap_region *r;
 	uint32_t l;
-	unsigned int x,z,i,err;
+	unsigned int x,z,i;
 	
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
@@ -91,10 +91,9 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 	
 	//engage structure to memory space
 	r->header = (struct mcmap_region_header *)buff;
-	err = 0;
-	for (z=0;z<32 && !err;z++)
+	for (z=0;z<32;z++)
 		{
-		for (x=0;x<32 && !err;x++)
+		for (x=0;x<32;x++)
 			{
 			if (r->header->locations[z][x].sector_count > 0)
 				{
@@ -105,27 +104,36 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 				
 				//chunk listing should not point anywhere in the file header
 				if (l < 2)
-					err = 1;
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed with invalid location %u",r_name,x,z,l);
+					return NULL;
+					}
 				//chunk listing should not point past the end of the file
 				i = l*4096;
-				if (i+r->header->locations[z][x].sector_count*4096 >= r_stat.st_size)
-					err = 1;
-				
-				if (!err)
+				if (i+r->header->locations[z][x].sector_count*4096 > r_stat.st_size)
 					{
-					//connect 5-byte chunk header
-					r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
-					//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
-					r->chunks[z][x].size = cswap_32(&(buff[i]));
-					//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
-					r->chunks[z][x].data = &(buff[i+5]);
-					
-					//listed chunk size should not be larger than the rest of the file
-					if (i+5+r->chunks[z][x].size >= r_stat.st_size)
-						err = 1;
-					//in fact neither should it be larger than the sector count in the file header
-					if (r->chunks[z][x].size+5 > r->header->locations[z][x].sector_count*4096)
-						err = 1;
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",r_name,x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r_stat.st_size);
+					return NULL;
+					}
+				
+				//connect 5-byte chunk header
+				r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
+				//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
+				r->chunks[z][x].size = cswap_32(&(buff[i]));
+				//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
+				r->chunks[z][x].data = &(buff[i+5]);
+				
+				//listed chunk size should not be larger than the rest of the file
+				if (i+5+r->chunks[z][x].size > r_stat.st_size)
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes when only %u bytes remain of the file",r_name,x,z,(unsigned int)r->chunks[z][x].size,((unsigned int)r_stat.st_size)-(i+5));
+					return NULL;
+					}
+				//in fact neither should it be larger than the sector count in the file header
+				if (r->chunks[z][x].size+5 > r->header->locations[z][x].sector_count*4096)
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes, which exceeds the %u bytes designated in the header",r_name,x,z,(unsigned int)r->chunks[z][x].size,r->header->locations[z][x].sector_count*4096);
+					return NULL;
 					}
 				}
 			else
@@ -135,11 +143,6 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 				r->chunks[z][x].data = NULL;
 				}
 			}
-		}
-	if (err)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be correupted",r_name);
-		return NULL;
 		}
 	
 	return r;
