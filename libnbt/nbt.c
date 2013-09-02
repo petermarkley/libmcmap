@@ -103,7 +103,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 				snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
 				return 0;
 				}
-			strm.next_out = &(output[0][strm.total_out+1]);
+			strm.next_out = &(output[0][strm.total_out]);
 			strm.avail_out = output_sz-strm.total_out;
 			}
 		}
