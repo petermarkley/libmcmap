@@ -281,12 +281,16 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 			return NULL;
 			}
 		//no memcpy() this time, our arrays are different types/sizes
+		i=0;
 		for (y = y_index*16; y < (y_index+1)*16; y++)
 			{
 			for (z=0;z<16;z++)
 				{
 				for (x=0;x<16;x++)
-					c->geom->blocks[y][z][x] = ((uint16_t)p->payload.p_byte_array.data[x+(z*16)+(y*256)])&0x00FF;
+					{
+					c->geom->blocks[y][z][x] = ((uint16_t)p->payload.p_byte_array.data[i])&0x00FF;
+					i++;
+					}
 				}
 			}
 		//optional addition to higher 4 bits for every block ID
@@ -297,17 +301,18 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 				return NULL;
 				}
+			i=0;
 			for (y = y_index*16; y < (y_index+1)*16; y++)
 				{
 				for (z=0;z<16;z++)
 					{
 					for (x=0;x<16;x++)
 						{
-						i = x+(z*16)+(y*256);
 						if (i%2 == 0)
 							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0xF0))<<4)&0x0F00);
 						else
 							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0x0F))<<8)&0x0F00);
+						i++;
 						}
 					}
 				}
@@ -318,17 +323,18 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 			return NULL;
 			}
+		i=0;
 		for (y = y_index*16; y < (y_index+1)*16; y++)
 			{
 			for (z=0;z<16;z++)
 				{
 				for (x=0;x<16;x++)
 					{
-					i = x+(z*16)+(y*256);
 					if (i%2 == 0)
 						c->geom->data[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 					else
 						c->geom->data[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+					i++;
 					}
 				}
 			}
@@ -341,17 +347,18 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 				return NULL;
 				}
+			i=0;
 			for (y = y_index*16; y < (y_index+1)*16; y++)
 				{
 				for (z=0;z<16;z++)
 					{
 					for (x=0;x<16;x++)
 						{
-						i = x+(z*16)+(y*256);
 						if (i%2 == 0)
 							c->light->block[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 						else
 							c->light->block[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						i++;
 						}
 					}
 				}
@@ -361,17 +368,18 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 				return NULL;
 				}
+			i=0;
 			for (y = y_index*16; y < (y_index+1)*16; y++)
 				{
 				for (z=0;z<16;z++)
 					{
 					for (x=0;x<16;x++)
 						{
-						i = x+(z*16)+(y*256);
 						if (i%2 == 0)
 							c->light->sky[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 						else
 							c->light->sky[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						i++;
 						}
 					}
 				}
