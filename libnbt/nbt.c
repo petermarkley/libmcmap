@@ -302,8 +302,9 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				}
 			
 			//close the linked list
-			for (loop = &(t[0]->firstchild); loop[0]->next_sib != NULL; loop = &(loop[0]->next_sib))
-				loop[0]->next_sib->prev_sib = loop[0];
+			if (t[0]->firstchild != NULL)
+				for (loop = &(t[0]->firstchild); loop[0]->next_sib != NULL; loop = &(loop[0]->next_sib))
+					loop[0]->next_sib->prev_sib = loop[0];
 			
 			//mark ending byte as consumed
 			nextin++;
@@ -347,6 +348,7 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 	uint8_t *input = NULL; //input after decompression (which will be output from '_nbt_decompress()')
 	size_t input_sz = 0;
 	struct nbt_tag *t;
+	//FILE *f;
 	
 	if (compress_type != NBT_COMPRESS_NONE)
 		{
@@ -358,6 +360,19 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		input = comp;
 		input_sz = comp_sz;
 		}
+	
+	//write file for diagnostics
+	/*if ((f = fopen("/tmp/temp.nbt","w")) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() returned NULL");
+		return NULL;
+		}
+	if (fwrite(input,1,input_sz,f) != input_sz)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fwrite() returned short item count");
+		return NULL;
+		}
+	fclose(f);*/
 	
 	//an NBT file is one big compound tag
 	if (_nbt_tag_read(input,input_sz,&t,NULL,0) == -1)
