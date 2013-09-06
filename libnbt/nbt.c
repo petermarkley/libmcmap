@@ -141,16 +141,14 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		}
 	t[0]->parent = parent;
 	
-	//populate list flag, type, and name
+	//populate type and name
 	if (t[0]->parent != NULL && t[0]->parent->type == NBT_LIST)
 		{
-		t[0]->islist = 1;
 		t[0]->type = parent->payload.p_list; //list items have no independent tag ID
 		t[0]->name = NULL; //list items have no name
 		}
 	else
 		{
-		t[0]->islist = 0;
 		//first byte of the tag is the ID
 		t[0]->type = input[nextin++];
 		//next two bytes are bytesize of name, followed by the name itself

@@ -72,7 +72,6 @@ struct nbt_tag
 	{
 	nbt_tagid type; //access only the corresponding payload
 	char *name; //technically can be UTF-8, but may be safely treated as ASCII
-	uint8_t islist; //is this a bare-minimum tag in a list?
 	
 	//payloads
 	union
