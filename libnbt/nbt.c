@@ -121,9 +121,8 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 //take pointer to binary data 'input' of size 'limit';
 //  allocate and populate nbt_tag pointed at by 't[0]' (owned by calling function
 //  so they'll have access to it when we're done) whose parent should be 'parent' (NULL if root tag);
-//  boolean 'islist' flag indicates whether tag should be an NBT_LIST;
 //  return number of input bytes consumed, -1 on error
-int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_tag *parent, uint8_t islist)
+int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_tag *parent)
 	{
 	unsigned int nextin = 0;
 	int32_t num;
@@ -140,23 +139,18 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 		return -1;
 		}
-	//populate immediately known info
 	t[0]->parent = parent;
-	t[0]->islist = islist;
 	
-	//populate type and name
-	if (islist) //if we're a member of a list, we have no name or independent tagid
+	//populate list flag, type, and name
+	if (t[0]->parent != NULL && t[0]->parent->type == NBT_LIST)
 		{
-		if (parent == NULL) //the file root should not be a list
-			{
-			snprintf(nbt_error,NBT_MAXSTR,"list item with NULL parent");
-			return -1;
-			}
-		t[0]->type = parent->payload.p_list;
-		t[0]->name = NULL;
+		t[0]->islist = 1;
+		t[0]->type = parent->payload.p_list; //list items have no independent tag ID
+		t[0]->name = NULL; //list items have no name
 		}
 	else
 		{
+		t[0]->islist = 0;
 		//first byte of the tag is the ID
 		t[0]->type = input[nextin++];
 		//next two bytes are bytesize of name, followed by the name itself
@@ -257,7 +251,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				for (i=0; i<num; i++)
 					{
 					//read tag
-					ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0],1);
+					ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0]);
 					//recognize error condition
 					if (ret == -1)
 						return -1;
@@ -285,7 +279,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			while (input[nextin] != NBT_END)
 				{
 				//read tag
-				ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0],0);
+				ret = _nbt_tag_read(&(input[nextin]),limit-nextin,loop,t[0]);
 				//recognize error condition
 				if (ret == -1)
 					return -1;
@@ -375,7 +369,7 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 	fclose(f);*/
 	
 	//an NBT file is one big compound tag
-	if (_nbt_tag_read(input,input_sz,&t,NULL,0) == -1)
+	if (_nbt_tag_read(input,input_sz,&t,NULL) == -1)
 		return NULL;
 	
 	if (input != comp) //don't free comp because we didn't allocate it

@@ -114,7 +114,7 @@ struct nbt_tag *nbt_file_read(const char *);
 void nbt_free(struct nbt_tag *);
 
 //separate one tag and its children from the linked structure, return it as its own root tag, and repair surrounding links
-//return value can immediately be passed to 'nbt_free()' if desired: 'nbt_free(nbt_separate(tag))'
+//return value can immediately be passed to 'nbt_free()' if desired: 'nbt_free(nbt_separate(tag));'
 struct nbt_tag *nbt_separate(struct nbt_tag *);
 
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
