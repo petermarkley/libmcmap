@@ -111,12 +111,13 @@ struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type
 struct nbt_tag *nbt_file_read(const char *);
 
 //free entire tag structure
-void nbt_free_all(struct nbt_tag *);
+void nbt_free(struct nbt_tag *);
 
-//free one tag and its children from the linked structure and repair surrounding links
-void nbt_free_one(struct nbt_tag *);
+//separate one tag and its children from the linked structure, return it as its own root tag, and repair surrounding links
+//return value can immediately be passed to 'nbt_free()' if desired: 'nbt_free(nbt_separate(tag))'
+struct nbt_tag *nbt_separate(struct nbt_tag *);
 
-//locate a particular child of a compound or list tag by its type and name, and return pointer to it
+//locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
 struct nbt_tag *nbt_find_child(struct nbt_tag *, nbt_tagid, const char *);
 
 //print ASCII representation of NBT structure to the given FILE stream;

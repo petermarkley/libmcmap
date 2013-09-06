@@ -389,7 +389,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	
 	if (!rem)
 		{
-		nbt_free_all(c->raw);
+		nbt_free(c->raw);
 		c->raw = NULL;
 		}
 	
@@ -402,7 +402,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	if (c != NULL)
 		{
 		if (c->raw != NULL)
-			nbt_free_all(c->raw);
+			nbt_free(c->raw);
 		if (c->geom != NULL)
 			free(c->geom);
 		if (c->light != NULL)

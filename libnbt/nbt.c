@@ -434,16 +434,16 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	}
 
 //free entire tag structure
-void nbt_free_all(struct nbt_tag *t)
+void nbt_free(struct nbt_tag *t)
 	{
 	if (t != NULL)
 		{
 		//children (parent is presumably being freed by the previous iteration)
 		if (t->firstchild != NULL)
-			nbt_free_all(t->firstchild);
+			nbt_free(t->firstchild);
 		//subsequent siblings (previous siblings are being freed by the previous iteration)
 		if (t->next_sib != NULL)
-			nbt_free_all(t->next_sib);
+			nbt_free(t->next_sib);
 		//name
 		if (t->name != NULL)
 			free(t->name);
@@ -470,8 +470,9 @@ void nbt_free_all(struct nbt_tag *t)
 	return;
 	}
 
-//free one tag and its children from the linked structure and repair surrounding links
-void nbt_free_one(struct nbt_tag *t)
+//separate one tag and its children from the linked structure, return it as its own root tag, and repair surrounding links
+//return value can immediately be passed to 'nbt_free()' if desired: 'nbt_free(nbt_separate(tag));'
+struct nbt_tag *nbt_separate(struct nbt_tag *t)
 	{
 	if (t != NULL)
 		{
@@ -500,14 +501,11 @@ void nbt_free_one(struct nbt_tag *t)
 		t->prev_sib = NULL;
 		t->next_sib = NULL;
 		t->parent = NULL;
-		
-		//ok we're untangled... now we can delete
-		nbt_free_all(t);
 		}
-	return;
+	return t;
 	}
 
-//locate a particular child of a compound or list tag by its type and name, and return pointer to it
+//locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
 struct nbt_tag *nbt_find_child(struct nbt_tag *t, nbt_tagid type, const char *name)
 	{
 	struct nbt_tag *loop;
