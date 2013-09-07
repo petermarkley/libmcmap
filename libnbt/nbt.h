@@ -107,12 +107,15 @@ struct nbt_tag
 //return NULL on failure
 struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type compress_type);
 
-//allocate 'output[0]' (must be NULL) and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
-//return size of 'output[0]' buffer or -1 on failure
+//allocate binary memory buffer 'output[0]' (must be NULL on function call) and save contents of 't' to it with
+//compression type 'compress_type' (must not be NBT_COMPRESS_UNKNOWN); return size of buffer or -1 on failure
 int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type);
 
 //load an NBT structure from a file on the disk, return NULL on failure
 struct nbt_tag *nbt_file_read(const char *);
+
+//save an NBT struct to a file on the disk, return 0 on success and -1 on failure
+int nbt_file_write(const char *, struct nbt_tag *, nbt_compression_type compress_type);
 
 //free entire tag structure
 void nbt_free(struct nbt_tag *);

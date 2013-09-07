@@ -341,7 +341,6 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 	uint8_t *input = NULL; //input after decompression (which will be output from '_nbt_decompress()')
 	size_t input_sz = 0;
 	struct nbt_tag *t;
-	//FILE *f;
 	
 	if (compress_type != NBT_COMPRESS_NONE)
 		{
@@ -353,19 +352,6 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		input = comp;
 		input_sz = comp_sz;
 		}
-	
-	//write file for diagnostics
-	/*if ((f = fopen("/tmp/temp_decoded.nbt","w")) == NULL)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fopen() returned NULL");
-		return NULL;
-		}
-	if (fwrite(input,1,input_sz,f) != input_sz)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fwrite() returned short item count");
-		return NULL;
-		}
-	fclose(f);*/
 	
 	//an NBT file is one big compound tag
 	if (_nbt_tag_read(input,input_sz,&t,NULL) == -1)
@@ -650,14 +636,13 @@ size_t _nbt_compress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_comp
 	return output_sz;
 	}
 
-//allocate 'output[0]' (must be NULL) and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
-//return size of 'output[0]' buffer or -1 on failure
+//allocate binary memory buffer 'output[0]' (must be NULL on function call) and save contents of 't' to it with
+//compression type 'compress_type' (must not be NBT_COMPRESS_UNKNOWN); return size of buffer or -1 on failure
 int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type)
 	{
 	size_t output_sz, comp_sz;
 	uint8_t *comp = NULL;
 	int ret;
-	//FILE *f;
 	
 	//sanity checks
 	if (output[0] != NULL)
@@ -690,19 +675,6 @@ int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compres
 		output[0] = comp;
 		output_sz = comp_sz;
 		}
-	
-	//write file for diagnostics
-	/*if ((f = fopen("/tmp/temp_encoded.nbt","w")) == NULL)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fopen() returned NULL");
-		return -1;
-		}
-	if (fwrite(output[0],1,output_sz,f) != output_sz)
-		{
-		snprintf(nbt_error,NBT_MAXSTR,"fwrite() returned short item count");
-		return -1;
-		}
-	fclose(f);*/
 	
 	return output_sz;
 	}
@@ -755,6 +727,35 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	free(b);
 	
 	return t;
+	}
+
+//write an NBT struct to a file on the disk, return 0 on success and -1 on failure
+int nbt_file_write(const char *fn, struct nbt_tag *t, nbt_compression_type compress_type)
+	{
+	FILE *f;
+	uint8_t *b = NULL;
+	int s;
+	
+	//encode NBT struct...
+	if ((s = nbt_encode(t,&b,compress_type)) == -1)
+		return -1;
+	//open file...
+	if ((f = fopen(fn,"w")) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
+		return -1;
+		}
+	//write file...
+	if (fwrite(b,1,s,f) != s)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fwrite() returned short item count");
+		return -1;
+		}
+	//don't need these anymore...
+	fclose(f);
+	free(b);
+	
+	return 0;
 	}
 
 //free entire tag structure
