@@ -152,7 +152,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 		//first byte of the tag is the ID
 		t[0]->type = input[nextin++];
 		//next two bytes are bytesize of name, followed by the name itself
-		num = cswap_16(&(input[nextin]));
+		num = cswapr_16(&(input[nextin]));
 		nextin += 2;
 		if (num > 0)
 			{
@@ -186,31 +186,31 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			t[0]->payload.p_byte = input[nextin++];
 			break;
 		case NBT_SHORT:
-			t[0]->payload.p_short = cswap_16(&(input[nextin]));
+			t[0]->payload.p_short = cswapr_16(&(input[nextin]));
 			nextin += 2;
 			break;
 		case NBT_INT:
-			t[0]->payload.p_int = cswap_32(&(input[nextin]));
+			t[0]->payload.p_int = cswapr_32(&(input[nextin]));
 			nextin += 4;
 			break;
 		case NBT_LONG:
-			t[0]->payload.p_long = cswap_64(&(input[nextin]));
+			t[0]->payload.p_long = cswapr_64(&(input[nextin]));
 			nextin += 8;
 			break;
 		case NBT_FLOAT:
-			tmp1 = cswap_32(&(input[nextin]));
+			tmp1 = cswapr_32(&(input[nextin]));
 			p1 = (float *)&tmp1;
 			nextin += 4;
 			t[0]->payload.p_float = *p1;
 			break;
 		case NBT_DOUBLE:
-			tmp2 = cswap_64(&(input[nextin]));
+			tmp2 = cswapr_64(&(input[nextin]));
 			p2 = (double *)&tmp2;
 			nextin += 8;
 			t[0]->payload.p_double = *p2;
 			break;
 		case NBT_BYTE_ARRAY:
-			t[0]->payload.p_byte_array.size = cswap_32(&(input[nextin]));
+			t[0]->payload.p_byte_array.size = cswapr_32(&(input[nextin]));
 			nextin += 4;
 			if (t[0]->payload.p_byte_array.size > 0)
 				{
@@ -224,7 +224,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 				}
 			break;
 		case NBT_STRING:
-			num = cswap_16(&(input[nextin]));
+			num = cswapr_16(&(input[nextin]));
 			nextin += 2;
 			if (num > 0)
 				{
@@ -239,7 +239,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			break;
 		case NBT_LIST:
 			t[0]->payload.p_list = input[nextin++];
-			num = cswap_32(&(input[nextin]));
+			num = cswapr_32(&(input[nextin]));
 			nextin += 4;
 			if (num > 0)
 				{
@@ -303,7 +303,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			
 			break;
 		case NBT_INT_ARRAY:
-			t[0]->payload.p_int_array.size = cswap_32(&(input[nextin]));
+			t[0]->payload.p_int_array.size = cswapr_32(&(input[nextin]));
 			nextin += 4;
 			if (t[0]->payload.p_int_array.size > 0)
 				{
@@ -314,7 +314,7 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 					}
 				for (i=0; i < t[0]->payload.p_int_array.size; i++)
 					{
-					t[0]->payload.p_int_array.data[i] = cswap_32(&(input[nextin]));
+					t[0]->payload.p_int_array.data[i] = cswapr_32(&(input[nextin]));
 					nextin += 4;
 					}
 				}

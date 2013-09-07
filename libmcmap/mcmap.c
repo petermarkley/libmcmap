@@ -98,9 +98,9 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 			if (r->header->locations[z][x].sector_count > 0)
 				{
 				//extract big-endian 32-bit integer from r->header->dates[z][x]
-				r->dates[z][x] = cswap_32(&(r->header->dates[z][x]));
+				r->dates[z][x] = cswapr_32(&(r->header->dates[z][x]));
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				l = cswap_24(&(r->header->locations[z][x].offset));
+				l = cswapr_24(&(r->header->locations[z][x].offset));
 				
 				//chunk listing should not point anywhere in the file header
 				if (l < 2)
@@ -119,7 +119,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 				//connect 5-byte chunk header
 				r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
 				//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
-				r->chunks[z][x].size = cswap_32(&(buff[i]));
+				r->chunks[z][x].size = cswapr_32(&(buff[i]));
 				//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
 				r->chunks[z][x].data = &(buff[i+5]);
 				
