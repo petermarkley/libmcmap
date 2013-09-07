@@ -288,6 +288,7 @@ struct __attribute__((__packed__)) mcmap_region_chunk_header //5-byte metadata f
 //nodes to dynamically navigate file contents
 struct mcmap_region_chunk
 	{
+	uint8_t separate; //boolean flag, 1 if 'header' & 'data' point to memory allocated individually and in need of freeing individually (MUST REMAIN ACCURATE TO AVOID LEAKS & SEGFAULTS)
 	struct mcmap_region_chunk_header *header; //to point at 5-byte chunk metadata
 	size_t size; //parsed copy of big-endian 32-bit integer at header->length, with 1 subtracted for compression flag
 	uint8_t *data; //to point at the next byte

@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1);
 		mcmap_region_free(r);
 		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
-		nbt_print_ascii(stdout,c->raw,3,10);
+		nbt_print_ascii(stdout,c->raw,3,16);
 		fprintf(stdout,"\n");
 		mcmap_chunk_free(c);
 		}

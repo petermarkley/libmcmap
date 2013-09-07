@@ -116,6 +116,8 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 					return NULL;
 					}
 				
+				//mark flag
+				r->chunks[z][x].separate = 0;
 				//connect 5-byte chunk header
 				r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
 				//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
