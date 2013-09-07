@@ -42,7 +42,7 @@
 #include "nbt.h"
 #include "cswap.h"
 
-//operate zlib pipe from input to output, return size of output
+//operate inflating zlib pipe from input to output, return size of output
 size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_compression_type compress_type)
 	{
 	size_t output_sz = 0;
@@ -566,21 +566,111 @@ int _nbt_tag_write(uint8_t **output, unsigned int nextin, size_t *size, struct n
 	return nextin;
 	}
 
-//allocate 'output[0]' and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
+//operate deflating zlib pipe from input to output, return size of output
+size_t _nbt_compress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_compression_type compress_type)
+	{
+	size_t output_sz = 0;
+	z_stream strm;
+	int w_add; //number to add to 'windowBits' argument of 'inflateInit2()', based on compression type
+	int ret;
+	
+	//we're responsible for allocating output
+	if (output[0] != NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"_nbt_compress() was passed a non-null \'output[0]\' pointer for allocation");
+		return 0;
+		}
+	switch (compress_type)
+		{
+		case NBT_COMPRESS_NONE:    return 0; break;
+		case NBT_COMPRESS_GZIP:    w_add=16; break;
+		case NBT_COMPRESS_ZLIB:    w_add= 0; break;
+		case NBT_COMPRESS_UNKNOWN: return 0; break;
+		}
+	
+	//initialize!
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.next_in = input;
+	strm.avail_in = input_sz;
+	if (deflateInit2(&strm,Z_BEST_COMPRESSION,Z_DEFLATED,15+w_add,9,Z_DEFAULT_STRATEGY) != Z_OK)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"zlib deflateInit2(): %s",strm.msg);
+		return 0;
+		}
+	//start out with maximum acceptable compressed data size
+	output_sz = input_sz;
+	if ((output[0] = (uint8_t *)calloc(output_sz,1)) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+		return 0;
+		}
+	strm.next_out = output[0];
+	strm.avail_out = output_sz;
+	
+	//first cycle
+	ret = deflate(&strm,Z_FINISH);
+	if (ret != Z_STREAM_END && ret != Z_OK)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"zlib deflate(): %s",strm.msg);
+		return 0;
+		}
+	//cycle through data, expanding output buffer as necessary
+	while (ret == Z_OK)
+		{
+		//compressed data should never be bigger than uncompressed, but there's no turning back now if it is ...
+		if (strm.avail_out == 0)
+			{
+			output_sz = output_sz*2; //let's go ahead and double it each time
+			if ((output[0] = realloc(output[0],output_sz)) == NULL)
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
+				return 0;
+				}
+			strm.next_out = &(output[0][strm.total_out]);
+			strm.avail_out = output_sz-strm.total_out;
+			}
+		//run it again
+		ret = deflate(&strm,Z_NO_FLUSH);
+		if (ret != Z_STREAM_END && ret != Z_OK)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"zlib deflate(): %s",strm.msg);
+			return 0;
+			}
+		}
+	
+	//truncate unused memory
+	output_sz -= strm.avail_out;
+	if ((output[0] = realloc(output[0],output_sz)) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
+		return 0;
+		}
+	return output_sz;
+	}
+
+//allocate 'output[0]' (must be NULL) and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
 //return size of 'output[0]' buffer or -1 on failure
 int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type)
 	{
-	size_t output_sz;
+	size_t output_sz, comp_sz;
+	uint8_t *comp = NULL;
 	int ret;
 	//FILE *f;
 	
-	//sanity-check
+	//sanity checks
 	if (output[0] != NULL)
 		{
 		snprintf(nbt_error,NBT_MAXSTR,"nbt_encode() was passed a non-null \'output[0]\' pointer for allocation");
 		return -1;
 		}
-	//allocate buffer and place root tag into it
+	if (compress_type == NBT_COMPRESS_UNKNOWN)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"NBT_COMPRESS_UNKNOWN is nonsensical for writing contexts; please make a decision");
+		return -1;
+		}
+	//allocate buffer and write root tag
 	if ((ret = _nbt_tag_write(output,0,&output_sz,t)) == -1)
 		return -1;
 	//truncate unused tail
@@ -589,6 +679,16 @@ int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compres
 		{
 		snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
 		return -1;
+		}
+	
+	//compress if necessary
+	if (compress_type != NBT_COMPRESS_NONE)
+		{
+		if ((comp_sz = _nbt_compress(output[0],&comp,output_sz,compress_type)) == 0)
+			return -1;
+		free(output[0]);
+		output[0] = comp;
+		output_sz = comp_sz;
 		}
 	
 	//write file for diagnostics
