@@ -103,10 +103,15 @@ struct nbt_tag
 	//unsigned int children_num; //0 for all but compound tags or lists
 	};
 
-//create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
+//create and return pointer to nbt_tag based on contents of 'input' with anticipated compression type 'compress_type' (may be NBT_COMPRESS_UNKNOWN);
+//return NULL on failure
 struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type compress_type);
 
-//load an NBT structure from a file on the disk
+//allocate 'output[0]' and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
+//return size of 'output[0]' buffer or -1 on failure
+int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type);
+
+//load an NBT structure from a file on the disk, return NULL on failure
 struct nbt_tag *nbt_file_read(const char *);
 
 //free entire tag structure

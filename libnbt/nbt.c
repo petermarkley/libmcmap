@@ -53,7 +53,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	//we're responsible for allocating output
 	if (output[0] != NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"_nbt_decompress() was passed a non-null 'output' pointer for allocation");
+		snprintf(nbt_error,NBT_MAXSTR,"_nbt_decompress() was passed a non-null \'output[0]\' pointer for allocation");
 		return 0;
 		}
 	switch (compress_type)
@@ -334,7 +334,8 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 	return nextin;
 	}
 
-//create and return pointer to nbt_tag based on contents of 'input' (compressed or uncompressed as specified by argument 3)
+//create and return pointer to nbt_tag based on contents of 'input' with anticipated compression type 'compress_type' (may be NBT_COMPRESS_UNKNOWN);
+//return NULL on failure
 struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type compress_type)
 	{
 	uint8_t *input = NULL; //input after decompression (which will be output from '_nbt_decompress()')
@@ -354,7 +355,7 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 		}
 	
 	//write file for diagnostics
-	/*if ((f = fopen("/tmp/temp.nbt","w")) == NULL)
+	/*if ((f = fopen("/tmp/temp_decoded.nbt","w")) == NULL)
 		{
 		snprintf(nbt_error,NBT_MAXSTR,"fopen() returned NULL");
 		return NULL;
@@ -375,7 +376,238 @@ struct nbt_tag *nbt_decode(uint8_t *comp, size_t comp_sz, nbt_compression_type c
 	return t;
 	}
 
-//load an NBT structure from a file on the disk
+//ensure buffer has room past index 'req'
+uint8_t *_nbt_buff_safe(uint8_t *b, size_t *s, unsigned int req)
+	{
+	if (b == NULL)
+		return NULL;
+	if (req >= *s)
+		{
+		//while (req >= *s) *s = (*s)*2;
+		*s = ( (req >= (*s)*2) ? (req*2) : ((*s)*2)); //let's be choosy and conservative
+		if ((b = (uint8_t *)realloc(b,*s)) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
+			return NULL;
+			}
+		}
+	return b;
+	}
+
+//take pointer to buffer 'output[0]' of size 'size[0]', a current index position in the buffer 'nextin',
+// and a pointer to an 'nbt_tag' struct; fill buffer with NBT file data from the struct and update 'size[0]'
+// as we expand the buffer; return new index position or -1 on failure
+int _nbt_tag_write(uint8_t **output, unsigned int nextin, size_t *size, struct nbt_tag *t)
+	{
+	uint32_t num;
+	int ret, i;
+	struct nbt_tag *loop;
+	uint32_t *p1;
+	uint64_t *p2;
+	
+	if (output[0] == NULL) //this must be the first recursion
+		{
+		size[0] = 4096; //let's start out with 4KiB
+		if ((output[0] = calloc(1,size[0])) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+			return -1;
+			}
+		}
+	if (t == NULL)
+		return 0;
+	
+	//only write tag ID and name if we're definitely not in an NBT_LIST
+	if (t->parent == NULL || t->parent->type != NBT_LIST)
+		{
+		output[0] = _nbt_buff_safe(output[0],size,nextin+3); //make sure we have room for 3 bytes
+		output[0][nextin++] = (uint8_t)(t->type); //record tag ID
+		if (t->name != NULL)
+			{
+			num = strlen(t->name); //count bytes in name
+			cswapw_16(&(output[0][nextin]),num); //write two-byte length
+			nextin += 2;
+			
+			//record name
+			if (num > 0)
+				{
+				output[0] = _nbt_buff_safe(output[0],size,nextin+num);
+				memcpy(&(output[0][nextin]),t->name,num);
+				nextin += num;
+				}
+			}
+		else
+			{
+			cswapw_16(&(output[0][nextin]),0); //record a zero for the name length
+			nextin += 2;
+			}
+		}
+	
+	//write payload
+	switch (t->type)
+		{
+		case NBT_END:
+			snprintf(nbt_error,NBT_MAXSTR,"\'nbt_tag\' struct has type NBT_END");
+			return -1;
+			break;
+		case NBT_BYTE:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+1);
+			output[0][nextin++] = (uint8_t)t->payload.p_byte;
+			break;
+		case NBT_SHORT:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+2);
+			cswapw_16(&(output[0][nextin]),t->payload.p_short);
+			nextin += 2;
+			break;
+		case NBT_INT:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+4);
+			cswapw_32(&(output[0][nextin]),t->payload.p_int);
+			nextin += 4;
+			break;
+		case NBT_LONG:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+8);
+			cswapw_64(&(output[0][nextin]),t->payload.p_long);
+			nextin += 8;
+			break;
+		case NBT_FLOAT:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+4);
+			p1 = (uint32_t *)(&(t->payload.p_float));
+			cswapw_32(&(output[0][nextin]),*p1);
+			nextin += 4;
+			break;
+		case NBT_DOUBLE:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+8);
+			p2 = (uint64_t *)(&(t->payload.p_double));
+			cswapw_64(&(output[0][nextin]),*p2);
+			nextin += 8;
+			break;
+		case NBT_BYTE_ARRAY:
+			//write array size
+			output[0] = _nbt_buff_safe(output[0],size,nextin+4);
+			cswapw_32(&(output[0][nextin]),t->payload.p_byte_array.size);
+			nextin += 4;
+			//write array
+			output[0] = _nbt_buff_safe(output[0],size, nextin + t->payload.p_byte_array.size);
+			memcpy(&(output[0][nextin]),t->payload.p_byte_array.data,t->payload.p_byte_array.size);
+			nextin += t->payload.p_byte_array.size;
+			break;
+		case NBT_STRING:
+			output[0] = _nbt_buff_safe(output[0],size,nextin+2); //make sure we have room for 2 bytes
+			if (t->payload.p_string != NULL)
+				{
+				num = strlen(t->payload.p_string); //count bytes
+				cswapw_16(&(output[0][nextin]),num); //write two-byte length
+				nextin += 2;
+				
+				//write string
+				if (num > 0)
+					{
+					output[0] = _nbt_buff_safe(output[0],size,nextin+num);
+					memcpy(&(output[0][nextin]),t->payload.p_string,num);
+					nextin += num;
+					}
+				}
+			else
+				{
+				cswapw_16(&(output[0][nextin]),0); //record a zero for the string length
+				nextin += 2;
+				}
+			break;
+		case NBT_LIST:
+			//write list type
+			output[0] = _nbt_buff_safe(output[0],size,nextin+5);
+			output[0][nextin++] = (uint8_t)t->payload.p_list;
+			//determine list size
+			num = 0;
+			for (loop = t->firstchild; loop != NULL; loop = loop->next_sib)
+				num++;
+			//write list size
+			cswapw_32(&(output[0][nextin]),num);
+			nextin += 4;
+			//write children
+			for (loop = t->firstchild; loop != NULL; loop = loop->next_sib)
+				{
+				if ((ret = _nbt_tag_write(output,nextin,size,loop)) == -1)
+					return -1;
+				nextin = ret;
+				}
+			break;
+		case NBT_COMPOUND:
+			//write children
+			for (loop = t->firstchild; loop != NULL; loop = loop->next_sib)
+				{
+				if ((ret = _nbt_tag_write(output,nextin,size,loop)) == -1)
+					return -1;
+				nextin = ret;
+				}
+			//write end tag
+			output[0] = _nbt_buff_safe(output[0],size,nextin+1);
+			output[0][nextin++] = (uint8_t)0x00;
+			break;
+		case NBT_INT_ARRAY:
+			//write array size
+			output[0] = _nbt_buff_safe(output[0],size,nextin+4);
+			cswapw_32(&(output[0][nextin]),t->payload.p_int_array.size);
+			nextin += 4;
+			//write array
+			output[0] = _nbt_buff_safe(output[0],size, nextin + (t->payload.p_int_array.size*4));
+			for (i=0; i < t->payload.p_int_array.size; i++)
+				{
+				cswapw_32(&(output[0][nextin]),t->payload.p_int_array.data[i]);
+				nextin += 4;
+				}
+			break;
+		default:
+			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id");
+			return -1;
+			break;
+		}
+	
+	return nextin;
+	}
+
+//allocate 'output[0]' and save contents of 't' to it with compression type 'compress_type' (may NOT be NBT_COMPRESS_UNKNOWN);
+//return size of 'output[0]' buffer or -1 on failure
+int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type)
+	{
+	size_t output_sz;
+	int ret;
+	//FILE *f;
+	
+	//sanity-check
+	if (output[0] != NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"nbt_encode() was passed a non-null \'output[0]\' pointer for allocation");
+		return -1;
+		}
+	//allocate buffer and place root tag into it
+	if ((ret = _nbt_tag_write(output,0,&output_sz,t)) == -1)
+		return -1;
+	//truncate unused tail
+	output_sz = ret;
+	if ((output[0] = (uint8_t *)realloc(output[0],output_sz)) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
+		return -1;
+		}
+	
+	//write file for diagnostics
+	/*if ((f = fopen("/tmp/temp_encoded.nbt","w")) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() returned NULL");
+		return -1;
+		}
+	if (fwrite(output[0],1,output_sz,f) != output_sz)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"fwrite() returned short item count");
+		return -1;
+		}
+	fclose(f);*/
+	
+	return output_sz;
+	}
+
+//load an NBT structure from a file on the disk, return NULL on failure
 struct nbt_tag *nbt_file_read(const char *fn)
 	{
 	struct nbt_tag *t;
