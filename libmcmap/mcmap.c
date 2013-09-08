@@ -234,13 +234,13 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 		return NULL;
 		}
-	c->meta->x = p->payload.p_int;
+	c->x = p->payload.p_int;
 	if ((p = nbt_find_child(t,NBT_INT,"zPos")) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
 		return NULL;
 		}
-	c->meta->z = p->payload.p_int;
+	c->z = p->payload.p_int;
 	
 	//read optional data
 	if (mode == MCMAP_READ_FULL)
@@ -408,6 +408,25 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		}
 	
 	return c;
+	}
+
+//save all existing components of the given chunk to the given coords in the given region, return 0 on success and -1 on failure
+int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *c)
+	{
+	struct nbt_tag *t, *p;
+	unsigned int ishere; //flag used for determining whether a chunk "section" has anything in it or not
+	c->x = x;
+	c->z = z;
+	
+	if (c->raw == NULL)
+		{
+		//FIXME
+		}
+	else
+		{
+		}
+	
+	return 0;
 	}
 
 //free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'

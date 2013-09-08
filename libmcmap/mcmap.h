@@ -344,7 +344,6 @@ struct mcmap_chunk_meta
 	int64_t mtime; //in-game tick value for when the chunk was saved
 	int8_t populated; //boolean flag for whether minecraft generated special features in this terrain
 	int64_t itime; //cumulative number of player-ticks (like man-hours) that have occurred in this block, used for growing the difficulty
-	int32_t x,z; //per-region chunk coordinates (should be >= 0, and < 32)
 	};
 //special objects (entities, tile entities, and tile ticks)
 //FIXME - fully implement this rather than point to raw NBT data
@@ -362,6 +361,8 @@ struct mcmap_chunk
 	struct mcmap_chunk_light   *light;
 	struct mcmap_chunk_meta    *meta;
 	struct mcmap_chunk_special *special;
+
+	int32_t x,z; //per-region chunk coordinates (should be >= 0, and < 32)
 	
 	struct nbt_tag *raw; //optionally retain stage-4 NBT structure
 	};
@@ -370,6 +371,9 @@ struct mcmap_chunk
 //'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on error
 struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode, int rem);
+
+//save all existing components of the given chunk to the given coords in the given region, return 0 on success and -1 on failure
+int mcmap_chunk_write(struct mcmap_region *, int x, int z, struct mcmap_chunk *);
 
 //free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'
 void mcmap_chunk_free(struct mcmap_chunk *);
