@@ -39,14 +39,13 @@
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
-struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
+struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	{
 	FILE *r_file;
 	char r_name[MCMAP_MAXSTR];
 	struct stat r_stat;
 	uint8_t *buff;
 	struct mcmap_region *r;
-	uint32_t l;
 	unsigned int x,z,i;
 	
 	//resolve filename from map directory...
@@ -100,16 +99,16 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, char *path)
 				//extract big-endian 32-bit integer from r->header->dates[z][x]
 				r->dates[z][x] = cswapr_32(&(r->header->dates[z][x]));
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				l = cswapr_24(&(r->header->locations[z][x].offset));
+				r->locations[z][x] = cswapr_24(&(r->header->locations[z][x].offset));
 				
 				//chunk listing should not point anywhere in the file header
-				if (l < 2)
+				if (r->locations[z][x] < 2)
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed with invalid location %u",r_name,x,z,l);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed with invalid location %u",r_name,x,z,r->locations[z][x]);
 					return NULL;
 					}
 				//chunk listing should not point past the end of the file
-				i = l*4096;
+				i = r->locations[z][x]*4096;
 				if (i+r->header->locations[z][x].sector_count*4096 > r_stat.st_size)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",r_name,x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r_stat.st_size);
@@ -229,6 +228,19 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	//read inhabited time
 	if ((p = nbt_find_child(t,NBT_LONG,"InhabitedTime")) != NULL) //this is supposedly a required tag for a chunk, but older maps (pre-1.6.1) won't have them so we won't sound the alarm
 		c->meta->itime = p->payload.p_long;
+	//read X & Z coords
+	if ((p = nbt_find_child(t,NBT_INT,"xPos")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		return NULL;
+		}
+	c->meta->x = p->payload.p_int;
+	if ((p = nbt_find_child(t,NBT_INT,"zPos")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		return NULL;
+		}
+	c->meta->z = p->payload.p_int;
 	
 	//read optional data
 	if (mode == MCMAP_READ_FULL)

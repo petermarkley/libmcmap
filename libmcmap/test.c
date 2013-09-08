@@ -22,7 +22,11 @@ int main(int argc, char **argv)
 	if (r->chunks[cz][cx].header != NULL)
 		{
 		//extract a single chunk and pass it to libnbt!
-		c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1);
+		if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
+			{
+			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+			return -1;
+			}
 		mcmap_region_free(r);
 		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
 		nbt_print_ascii(stdout,c->raw,3,16);

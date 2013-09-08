@@ -297,25 +297,25 @@ struct mcmap_region
 	{
 	struct mcmap_region_header *header; //to point at a new RAM copy of the file header
 	time_t dates[32][32]; //parsed copies of 32-bit integers at header->dates[z][x]
+	uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
 	struct mcmap_region_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	};
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
-struct mcmap_region *mcmap_region_read(int, int, char *);
+struct mcmap_region *mcmap_region_read(int, int, const char *);
 
 //free all memory allocated in 'mcmap_region_read()' or 'mcmap_region_new()'
 void mcmap_region_free(struct mcmap_region *);
 
 
-//stages 2-4: parsing gzipped NBT file in memory
-//----------------------------------------------
+// -------------------------------------
+//  --stages 2-4 are handled by libnbt--
+// -------------------------------------
 
-//these stages are handled by libnbt.
 
-
-//stage 5: native minecraft memory structure
-//------------------------------------------
+// stage 5: native minecraft memory structure
+// ------------------------------------------
 
 //read mode for 'mcmap_chunk_read()'
 typedef enum
@@ -344,6 +344,7 @@ struct mcmap_chunk_meta
 	int64_t mtime; //in-game tick value for when the chunk was saved
 	int8_t populated; //boolean flag for whether minecraft generated special features in this terrain
 	int64_t itime; //cumulative number of player-ticks (like man-hours) that have occurred in this block, used for growing the difficulty
+	int32_t x,z; //per-region chunk coordinates (should be >= 0, and < 32)
 	};
 //special objects (entities, tile entities, and tile ticks)
 //FIXME - fully implement this rather than point to raw NBT data
