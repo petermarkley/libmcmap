@@ -831,7 +831,7 @@ struct nbt_tag *nbt_separate(struct nbt_tag *t)
 	}
 
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
-struct nbt_tag *nbt_find_child(struct nbt_tag *t, nbt_tagid type, const char *name)
+struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *name)
 	{
 	struct nbt_tag *loop;
 	if (t == NULL || t->firstchild == NULL)
@@ -853,6 +853,45 @@ struct nbt_tag *nbt_find_child(struct nbt_tag *t, nbt_tagid type, const char *na
 			}
 		}
 	return NULL;
+	}
+
+//create & return, as a child of the given parent, a tag with the given type and name; return NULL on failure
+struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char *name)
+	{
+	struct nbt_tag *t, *loop;
+	//type
+	if ((t = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	t->type = type;
+	//name
+	if (name != NULL)
+		{
+		if ((t->name = (char *)calloc(strlen(name),1)) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		strcpy(t->name,name);
+		}
+	else
+		t->name = NULL;
+	//structure links
+	t->parent = parent;
+	if (parent != NULL)
+		{
+		if (parent->firstchild != NULL)
+			{
+			for (loop = parent->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+			t->prev_sib = loop;
+			loop->next_sib = t;
+			}
+		else
+			parent->firstchild = t;
+		}
+	return t;
 	}
 
 //print ASCII representation of NBT structure to the given FILE stream;

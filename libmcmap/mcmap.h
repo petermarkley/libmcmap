@@ -320,7 +320,7 @@ void mcmap_region_free(struct mcmap_region *);
 //read mode for 'mcmap_chunk_read()'
 typedef enum
 	{
-	MCMAP_READ_PARTIAL, //load only the 'geom' member of 'struct mcmap_chunk' to save memory
+	MCMAP_READ_PARTIAL, //load only the 'geom' & 'meta' members of 'struct mcmap_chunk' to save memory
 	MCMAP_READ_FULL //load entire 'struct mcmap_chunk' from raw NBT data
 	} mcmap_readmode;
 
@@ -329,10 +329,10 @@ struct mcmap_chunk_geom
 	{
 	uint16_t blocks[256][16][16]; //file specification says this can be 8-bit or 12-bit
 	uint8_t    data[256][16][16]; //block metadata; these are always 4-bit
-	uint8_t  biomes     [16][16]; //these are 8-bit
+	int8_t   biomes     [16][16]; //these are 8-bit
 	};
 //lighting
-struct mcmap_chunk_light
+struct mcmap_chunk_light //this info is not used by 'mcmap_chunk_write()', but allocating it serves as a toggle for dealing with the NBT light data
 	{
 	uint8_t  block[256][16][16]; //4-bit block-emitted light level
 	uint8_t    sky[256][16][16]; //4-bit sky-emitted light level
@@ -372,8 +372,12 @@ struct mcmap_chunk
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on error
 struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode, int rem);
 
-//save all existing components of the given chunk to the given coords in the given region, return 0 on success and -1 on failure
-int mcmap_chunk_write(struct mcmap_region *, int x, int z, struct mcmap_chunk *);
+//update height map based on geometry (unnecessary before calling 'mcmap_chunk_write()'; will be called anyway)
+void mcmap_chunk_height_update(struct mcmap_chunk *);
+
+//save all existing components of the given chunk to the given coords in the given region;
+//'rem' is a boolean flag for whether to remember the raw NBT structure on return; return 0 on success and -1 on failure
+int mcmap_chunk_write(struct mcmap_region *, int x, int z, struct mcmap_chunk *, int rem);
 
 //free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'
 void mcmap_chunk_free(struct mcmap_chunk *);
