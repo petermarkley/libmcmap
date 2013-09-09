@@ -33,6 +33,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <math.h>
 #include "mcmap.h"
 #include "libnbt/nbt.h"
 #include "cswap.h"
@@ -406,6 +407,21 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	return c;
 	}
 
+//return 1 if light passes through the given block totally unaltered, otherwise 0
+int _mcmap_chunk_height_update_test(mcmap_blockid i)
+	{
+	switch (i)
+		{
+		case MCMAP_AIR:
+		case MCMAP_GLASS:
+		case MCMAP_GLASS_PANE:
+			return 1;
+			break;
+		default: return 0; break;
+		}
+	return 0;
+	}
+
 //update height map based on geometry (unnecessary before calling 'mcmap_chunk_write()'; will be called anyway)
 void mcmap_chunk_height_update(struct mcmap_chunk *c)
 	{
@@ -416,7 +432,7 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 			{
 			for (x=0;x<16;x++)
 				{
-				for (y=256; y>0 && (c->geom->blocks[z][y-1][x] == MCMAP_AIR || c->geom->blocks[z][y-1][x] == MCMAP_GLASS || c->geom->blocks[z][y-1][x] == MCMAP_GLASS_PANE); y--);
+				for (y=256; y>0 && _mcmap_chunk_height_update_test(c->geom->blocks[y-1][z][x]); y--);
 				c->light->height[z][x] = y;
 				}
 			}
@@ -512,7 +528,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 		{
 		if (Biomes->payload.p_byte_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (1)");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Biomes\' was not size 256");
 			return -1;
 			}
 		}
@@ -529,7 +545,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 		{
 		if (Sections->payload.p_list != NBT_COMPOUND)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (2)");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'Sections\' was not type Compound");
 			return -1;
 			}
 		}
@@ -549,7 +565,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if ((probe = nbt_child_find(loop,NBT_BYTE,"Y")) == NULL || probe->payload.p_byte < 0 || probe->payload.p_byte > 15)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (3)");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Compound child of List \'Sections\' did not have a \'Y\' index in range");
 				return -1;
 				}
 			s[probe->payload.p_byte] = loop;
@@ -615,7 +631,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe->payload.p_byte_array.size != 4096)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (4)");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Blocks\' was not size 4096");
 						return -1;
 						}
 					}
@@ -653,7 +669,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						{
 						if (probe->payload.p_byte_array.size != 2048)
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (5)");
+							snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Add\' was not size 2048");
 							return -1;
 							}
 						}
@@ -666,9 +682,9 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 							for (x=0;x<16;x++)
 								{
 								if (j%2 == 0)
-									probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->blocks[y][z][x])>>4)&0xFF00);
+									probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->blocks[y][z][x])>>4)&0x00F0);
 								else
-									probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->blocks[y][z][x])>>8)&0x00FF);
+									probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->blocks[y][z][x])>>8)&0x000F);
 								j++;
 								}
 							}
@@ -693,7 +709,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe->payload.p_byte_array.size != 2048)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (6)");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Data\' was not size 2048");
 						return -1;
 						}
 					}
@@ -706,9 +722,9 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						for (x=0;x<16;x++)
 							{
 							if (j%2 == 0)
-								probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->data[y][z][x])>>4)&0xFF00);
+								probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->data[y][z][x])<<4)&0xF0);
 							else
-								probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->data[y][z][x])>>8)&0x00FF);
+								probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->data[y][z][x])<<0)&0x0F);
 							j++;
 							}
 						}
@@ -738,7 +754,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if (HeightMap->payload.p_int_array.size != 256)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (7)");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Int Array \'HeightMap\' was not size 256");
 				return -1;
 				}
 			}
@@ -789,7 +805,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				{
 				if (Entities->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (8)");
+					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'Entities\' was not type Compound");
 					return -1;
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
@@ -858,7 +874,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						TileEntities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves an empty 'TileEntities' list as a list of NBT_BYTEs ... ? go figure
 					else
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (9)");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileEntities\' List was not type Compound");
 						return -1;
 						}
 					}
@@ -924,7 +940,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				{
 				if (TileTicks->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk (10)");
+					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'TileTicks\' was not type Compound");
 					return -1;
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
@@ -969,14 +985,23 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 //'rem' is a boolean flag for whether to remember the raw NBT structure on return; return 0 on success and -1 on failure
 int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *c, int rem)
 	{
-	c->x = x;
-	c->z = z;
+	uint8_t *b = NULL;
+	int s;
 	
 	//save native chunk data to the raw NBT structure...
+	c->x = x;
+	c->z = z;
 	if (_mcmap_chunk_nbt_save(c) != 0)
 		return -1;
 	
-	//FIXME - call 'nbt_encode()' and place the results into 'r'
+	//save raw NBT structure to binary memory buffer...
+	if ((s = nbt_encode(c->raw,&b,NBT_COMPRESS_ZLIB)) == -1)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return -1;
+		}
+	//FIXME - save 'b' to 'r' somewhere!
+	free(b);
 	
 	if (!rem)
 		{

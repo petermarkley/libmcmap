@@ -30,11 +30,15 @@ int main(int argc, char **argv)
 		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
 		nbt_print_ascii(stdout,c->raw,3,16);
 		fprintf(stdout,"\n");
+		
+		nbt_file_write("/tmp/temp_encoded1.nbt",c->raw,NBT_COMPRESS_NONE);
 		if (mcmap_chunk_write(r,cx,cz,c,1) == -1)
 			{
 			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 			return -1;
 			}
+		nbt_file_write("/tmp/temp_encoded2.nbt",c->raw,NBT_COMPRESS_NONE);
+		
 		mcmap_region_free(r);
 		mcmap_chunk_free(c);
 		}
