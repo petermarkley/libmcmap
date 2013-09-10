@@ -31,13 +31,17 @@ int main(int argc, char **argv)
 		nbt_print_ascii(stdout,c->raw,3,16);
 		fprintf(stdout,"\n");
 		
-		nbt_file_write("/tmp/temp_encoded1.nbt",c->raw,NBT_COMPRESS_NONE);
+		fprintf(stdout,"region size\tbefore=%u\n",(unsigned int)r->size);
+		fprintf(stdout,"sector count\tbefore=%u\n",r->header->locations[cz][cx].sector_count);
+		//nbt_file_write("/tmp/temp_encoded1.nbt",c->raw,NBT_COMPRESS_NONE);
 		if (mcmap_chunk_write(r,cx,cz,c,1) == -1)
 			{
 			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 			return -1;
 			}
-		nbt_file_write("/tmp/temp_encoded2.nbt",c->raw,NBT_COMPRESS_NONE);
+		//nbt_file_write("/tmp/temp_encoded2.nbt",c->raw,NBT_COMPRESS_NONE);
+		fprintf(stdout,"region size\t after=%u\n",(unsigned int)r->size);
+		fprintf(stdout,"sector count\t after=%u\n",r->header->locations[cz][cx].sector_count);
 		
 		mcmap_region_free(r);
 		mcmap_chunk_free(c);

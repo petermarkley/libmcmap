@@ -38,6 +38,21 @@
 #include "libnbt/nbt.h"
 #include "cswap.h"
 
+//assign 'mcmap_region_chunk' pointers, of the chunk at the given coordinates, to the proper places in the memory buffer - assuming correct values everywhere else
+void _mcmap_region_chunk_refresh(struct mcmap_region *r, int x, int z)
+	{
+	uint8_t *b = (uint8_t *)r->header;
+	int i = r->locations[z][x]*4096;
+	if (r->locations[z][x] >= 2)
+		{
+		//connect 5-byte chunk header
+		r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(b[i]);
+		//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
+		r->chunks[z][x].data = &(b[i+5]);
+		}
+	return;
+	}
+
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
 struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
@@ -91,6 +106,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	
 	//engage structure to memory space
 	r->header = (struct mcmap_region_header *)buff;
+	r->size = r_stat.st_size;
 	for (z=0;z<32;z++)
 		{
 		for (x=0;x<32;x++)
@@ -101,6 +117,10 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 				r->dates[z][x] = cswapr_32(&(r->header->dates[z][x]));
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
 				r->locations[z][x] = cswapr_24(&(r->header->locations[z][x].offset));
+				//connect pointers
+				_mcmap_region_chunk_refresh(r,x,z);
+				//extract big-endian 32-bit integer for precise chunk size
+				r->chunks[z][x].size = cswapr_32(&(r->chunks[z][x].header->length[0]));
 				
 				//chunk listing should not point anywhere in the file header
 				if (r->locations[z][x] < 2)
@@ -110,25 +130,15 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 					}
 				//chunk listing should not point past the end of the file
 				i = r->locations[z][x]*4096;
-				if (i+r->header->locations[z][x].sector_count*4096 > r_stat.st_size)
+				if (i+r->header->locations[z][x].sector_count*4096 > r->size)
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",r_name,x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r_stat.st_size);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",r_name,x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r->size);
 					return NULL;
 					}
-				
-				//mark flag
-				r->chunks[z][x].separate = 0;
-				//connect 5-byte chunk header
-				r->chunks[z][x].header = (struct mcmap_region_chunk_header *)&(buff[i]);
-				//extract big-endian 32-bit integer from r->chunks[z][x].header->length (same location as buff[i])
-				r->chunks[z][x].size = cswapr_32(&(buff[i]));
-				//'r->chunks[z][x].data' will now point to a block of 'r->chunks[z][x].size' bytes
-				r->chunks[z][x].data = &(buff[i+5]);
-				
 				//listed chunk size should not be larger than the rest of the file
-				if (i+5+r->chunks[z][x].size > r_stat.st_size)
+				if (i+5+r->chunks[z][x].size > r->size)
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes when only %u bytes remain of the file",r_name,x,z,(unsigned int)r->chunks[z][x].size,((unsigned int)r_stat.st_size)-(i+5));
+					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes when only %u bytes remain of the file",r_name,x,z,(unsigned int)r->chunks[z][x].size,((unsigned int)r->size)-(i+5));
 					return NULL;
 					}
 				//in fact neither should it be larger than the sector count in the file header
@@ -143,6 +153,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 				r->chunks[z][x].header = NULL;
 				r->chunks[z][x].size = 0;
 				r->chunks[z][x].data = NULL;
+				r->locations[z][x] = 0;
 				}
 			}
 		}
@@ -986,28 +997,114 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *c, int rem)
 	{
 	uint8_t *b = NULL;
-	int s;
+	uint8_t *m = (uint8_t *)r->header;
+	int s, i, d, lx,lz, f, e;
+	nbt_compression_type compression = NBT_COMPRESS_ZLIB;
 	
-	//save native chunk data to the raw NBT structure...
+	//save native chunk data to the raw NBT structure
 	c->x = x;
 	c->z = z;
 	if (_mcmap_chunk_nbt_save(c) != 0)
 		return -1;
 	
-	//save raw NBT structure to binary memory buffer...
-	if ((s = nbt_encode(c->raw,&b,NBT_COMPRESS_ZLIB)) == -1)
+	//save raw NBT structure to binary memory buffer
+	if ((s = nbt_encode(c->raw,&b,compression)) == -1)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return -1;
 		}
-	//FIXME - save 'b' to 'r' somewhere!
-	free(b);
-	
 	if (!rem)
 		{
 		nbt_free(c->raw);
 		c->raw = NULL;
 		}
+	
+	//negotiate a place for the memory buffer in the 'mcmap_region' struct, and save the buffer there
+	d = (int)ceil(((double)s)/4096.0) - r->header->locations[z][x].sector_count;
+	e = (int)ceil(((double)r->size)/4096.0);
+	r->header->locations[z][x].sector_count = (uint8_t)((int)ceil(((double)s)/4096.0));
+	if (r->chunks[z][x].header != NULL) //chunk already exists
+		{
+		//make sure there's the right amount of space for it
+		if (d != 0)
+			{
+			if (d > 0) //new chunk is larger than old chunk
+				{
+				//expand memory first
+				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+d*4096)) == NULL)
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+					return -1;
+					}
+				r->size += d*4096;
+				//shuffle things starting at the end and moving backwards
+				for (i = e-1; i > r->locations[z][x]; i--)
+					{
+					//find out which chunk this is and slide it toward the end
+					f=0;
+					for (lz=15; lz>=0 && !f; lz--)
+						{
+						for (lx=15; lx>=0 && !f; lx--)
+							{
+							if (r->locations[lz][lx] == i)
+								{
+								f=1;
+								memmove(&(m[(i+d)*4096]),&(m[i*4096]),r->chunks[lz][lx].size+5);
+								r->locations[lz][lx] += d;
+								}
+							}
+						}
+					}
+				}
+			else //new chunk is smaller than old chunk
+				{
+				//shuffle things starting here and moving forwards...
+				for (i = r->locations[z][x]+1; i < e; i++)
+					{
+					//find out which chunk this is and slide it toward the end
+					f=0;
+					for (lz=0; lz<16 && !f; lz++)
+						{
+						for (lx=0; lx<16 && !f; lx++)
+							{
+							if (r->locations[lz][lx] == i)
+								{
+								f=1;
+								memmove(&(m[(i+d)*4096]),&(m[i*4096]),r->chunks[lz][lx].size+5);
+								r->locations[lz][lx] += d;
+								}
+							}
+						}
+					}
+				//shrink memory when we're done...
+				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+d*4096)) == NULL)
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+					return -1;
+					}
+				r->size += d*4096;
+				}
+			}
+		}
+	else //chunk doesn't exist; we must create it
+		{
+		if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+r->header->locations[z][x].sector_count*4096)) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+			return -1;
+			}
+		r->locations[z][x] = e-1; //put it at the end
+		r->size += r->header->locations[z][x].sector_count*4096;
+		}
+	//restore all chunk pointers after potentially invalidating them with 'realloc()' or definitely invalidating them with 'memmove()'
+	for (lz=0;lz<16;lz++)
+		for (lx=0;lx<16;lx++)
+			_mcmap_region_chunk_refresh(r,lx,lz);
+	//write chunk
+	memcpy(r->chunks[z][x].data,b,s);
+	r->chunks[z][x].size = s;
+	r->chunks[z][x].header->compression = (uint8_t)compression;
+	free(b);
 	
 	return 0;
 	}
