@@ -36,7 +36,7 @@
 #include "libnbt/nbt.h"
 
 #define MCMAP_LIBNAME "libmcmap"
-#define MCMAP_MAXSTR 2048
+#define MCMAP_MAXSTR 4096
 
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
@@ -304,7 +304,11 @@ struct mcmap_region
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
-struct mcmap_region *mcmap_region_read(int, int, const char *);
+struct mcmap_region *mcmap_region_read(int ix, int iz, const char *);
+
+//saves the given region memory structure under the given coordinates in the given minecraft map folder
+//returns 0 on success and -1 on failure
+int mcmap_region_write(struct mcmap_region *, int ix, int iz, const char *);
 
 //free all memory allocated in 'mcmap_region_read()' or 'mcmap_region_new()'
 void mcmap_region_free(struct mcmap_region *);
@@ -314,6 +318,7 @@ void mcmap_region_free(struct mcmap_region *);
 //  --stages 2-4 are handled by libnbt--
 // -------------------------------------
 
+#define MCMAP_COMPRESSION NBT_COMPRESS_ZLIB
 
 // stage 5: native minecraft memory structure
 // ------------------------------------------

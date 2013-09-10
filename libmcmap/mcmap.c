@@ -41,8 +41,14 @@
 //assign 'mcmap_region_chunk' pointers, of the chunk at the given coordinates, to the proper places in the memory buffer - assuming correct values everywhere else
 void _mcmap_region_chunk_refresh(struct mcmap_region *r, int x, int z)
 	{
-	uint8_t *b = (uint8_t *)r->header;
-	int i = r->locations[z][x]*4096;
+	uint8_t *b;
+	int i;
+	//let's avoid dereferencing any NULL pointers, shall we?
+	if (r == NULL || r->header == NULL)
+		return;
+	b = (uint8_t *)r->header;
+	i = r->locations[z][x]*4096;
+	//connect pointers
 	if (r->locations[z][x] >= 2)
 		{
 		//connect 5-byte chunk header
@@ -51,6 +57,41 @@ void _mcmap_region_chunk_refresh(struct mcmap_region *r, int x, int z)
 		r->chunks[z][x].data = &(b[i+5]);
 		}
 	return;
+	}
+
+//check an 'mcmap_region_chunk' for sanity, return 0 if good and -1 if bad
+int _mcmap_region_chunk_check(struct mcmap_region *r, int x, int z)
+	{
+	int i;
+	//let's avoid dereferencing any NULL pointers, shall we?
+	if (r == NULL || r->header == NULL)
+		return 0;
+	//chunk listing should not point anywhere in the file header
+	if (r->locations[z][x] < 2)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed with invalid location %u",x,z,r->locations[z][x]);
+		return -1;
+		}
+	//chunk listing should not point past the end of the file
+	i = r->locations[z][x]*4096;
+	if (i+r->header->locations[z][x].sector_count*4096 > r->size)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r->size);
+		return -1;
+		}
+	//listed chunk size should not be larger than the rest of the file
+	if (i+5+r->chunks[z][x].size > r->size)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed to be %u bytes when only %u bytes remain of the file",x,z,(unsigned int)r->chunks[z][x].size,((unsigned int)r->size)-(i+5));
+		return -1;
+		}
+	//in fact neither should it be larger than the sector count in the file header
+	if (r->chunks[z][x].size+5 > r->header->locations[z][x].sector_count*4096)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed to be %u bytes, which exceeds the %u bytes designated in the header",x,z,(unsigned int)r->chunks[z][x].size,r->header->locations[z][x].sector_count*4096);
+		return -1;
+		}
+	return 0;
 	}
 
 //searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
@@ -114,37 +155,17 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 			if (r->header->locations[z][x].sector_count > 0)
 				{
 				//extract big-endian 32-bit integer from r->header->dates[z][x]
-				r->dates[z][x] = cswapr_32(&(r->header->dates[z][x]));
+				r->dates[z][x] = cswapr_32(&(r->header->dates[z][x][0]));
 				//extract big-endian 24-bit integer from r->header->location[z][x].offset
-				r->locations[z][x] = cswapr_24(&(r->header->locations[z][x].offset));
+				r->locations[z][x] = cswapr_24(&(r->header->locations[z][x].offset[0]));
 				//connect pointers
 				_mcmap_region_chunk_refresh(r,x,z);
 				//extract big-endian 32-bit integer for precise chunk size
 				r->chunks[z][x].size = cswapr_32(&(r->chunks[z][x].header->length[0]));
-				
-				//chunk listing should not point anywhere in the file header
-				if (r->locations[z][x] < 2)
+				//sanity check
+				if (_mcmap_region_chunk_check(r,x,z) == -1)
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed with invalid location %u",r_name,x,z,r->locations[z][x]);
-					return NULL;
-					}
-				//chunk listing should not point past the end of the file
-				i = r->locations[z][x]*4096;
-				if (i+r->header->locations[z][x].sector_count*4096 > r->size)
-					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to inhabit %u 4KiB sectors ending at byte %u; file is only %u bytes long",r_name,x,z,r->header->locations[z][x].sector_count,i+((unsigned int)r->header->locations[z][x].sector_count)*4096,(unsigned int)r->size);
-					return NULL;
-					}
-				//listed chunk size should not be larger than the rest of the file
-				if (i+5+r->chunks[z][x].size > r->size)
-					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes when only %u bytes remain of the file",r_name,x,z,(unsigned int)r->chunks[z][x].size,((unsigned int)r->size)-(i+5));
-					return NULL;
-					}
-				//in fact neither should it be larger than the sector count in the file header
-				if (r->chunks[z][x].size+5 > r->header->locations[z][x].sector_count*4096)
-					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"file \'%s\' may be corrupted: chunk (%d,%d) was listed to be %u bytes, which exceeds the %u bytes designated in the header",r_name,x,z,(unsigned int)r->chunks[z][x].size,r->header->locations[z][x].sector_count*4096);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"\'%s\': %s",r_name,mcmap_error);
 					return NULL;
 					}
 				}
@@ -159,6 +180,64 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 		}
 	
 	return r;
+	}
+
+//saves the given region memory structure under the given coordinates in the given minecraft map folder
+//returns 0 on success and -1 on failure
+int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
+	{
+	FILE *r_file;
+	char r_name[MCMAP_MAXSTR];
+	uint8_t *buff;
+	unsigned int x,z,i;
+	
+	//let's avoid dereferencing any NULL pointers, shall we?
+	if (r == NULL || r->header == NULL)
+		return -1;
+	
+	//write values from parsed native copies to the memory buffer
+	for (z=0;z<32;z++)
+		{
+		for (x=0;x<32;x++)
+			{
+			if (r->chunks[z][x].header != NULL)
+				{
+				//sanity check
+				if (_mcmap_region_chunk_check(r,x,z) == -1)
+					return -1;
+				//write big-endian 32-bit integer for precise chunk size
+				cswapw_32(&(r->chunks[z][x].header->length[0]),r->chunks[z][x].size);
+				//write big-endian 24-bit integer to r->header->locations[z][x].offset
+				cswapw_24(&(r->header->locations[z][x].offset[0]),r->locations[z][x]);
+				//write big-endian 32-bit integer to r->header->dates[z][x]
+				cswapw_32(&(r->header->dates[z][x][0]),r->dates[z][x]);
+				}
+			}
+		}
+	
+	//resolve filename from map directory...
+	for (i=0;path[i]!='\0';i++);
+	if (path[i-1] == '/')
+		snprintf(r_name, MCMAP_MAXSTR, "%sregion/r.%d.%d.mca", path, ix, iz);
+	else
+		snprintf(r_name, MCMAP_MAXSTR, "%s/region/r.%d.%d.mca", path, ix, iz);
+	//open file...
+	if ((r_file = fopen(r_name,"w")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
+		return -1;
+		}
+	//write file...
+	buff = (uint8_t *)r->header;
+	if ((i = fwrite(buff,1,r->size,r_file)) != r->size)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",r_name);
+		return -1;
+		}
+	//don't need this anymore...
+	fclose(r_file);
+	
+	return 0;
 	}
 
 //free all memory allocated in 'mcmap_region_read()' or 'mcmap_region_new()'
@@ -999,7 +1078,6 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 	uint8_t *b = NULL;
 	uint8_t *m = (uint8_t *)r->header;
 	int s, i, d, lx,lz, f, e;
-	nbt_compression_type compression = NBT_COMPRESS_ZLIB;
 	
 	//save native chunk data to the raw NBT structure
 	c->x = x;
@@ -1008,7 +1086,7 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 		return -1;
 	
 	//save raw NBT structure to binary memory buffer
-	if ((s = nbt_encode(c->raw,&b,compression)) == -1)
+	if ((s = nbt_encode(c->raw,&b,MCMAP_COMPRESSION)) == -1)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return -1;
@@ -1103,7 +1181,7 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 	//write chunk
 	memcpy(r->chunks[z][x].data,b,s);
 	r->chunks[z][x].size = s;
-	r->chunks[z][x].header->compression = (uint8_t)compression;
+	r->chunks[z][x].header->compression = (uint8_t)MCMAP_COMPRESSION;
 	free(b);
 	
 	return 0;

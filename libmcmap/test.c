@@ -27,21 +27,22 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 			return -1;
 			}
-		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
-		nbt_print_ascii(stdout,c->raw,3,16);
-		fprintf(stdout,"\n");
+		//fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
+		//nbt_print_ascii(stdout,c->raw,3,16);
+		//fprintf(stdout,"\n");
 		
-		fprintf(stdout,"region size\tbefore=%u\n",(unsigned int)r->size);
-		fprintf(stdout,"sector count\tbefore=%u\n",r->header->locations[cz][cx].sector_count);
 		//nbt_file_write("/tmp/temp_encoded1.nbt",c->raw,NBT_COMPRESS_NONE);
 		if (mcmap_chunk_write(r,cx,cz,c,1) == -1)
 			{
 			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 			return -1;
 			}
+		if (mcmap_region_write(r,0,0,"/Users/peter/Library/Application Support/minecraft/saves/New World/") == -1)
+			{
+			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+			return -1;
+			}
 		//nbt_file_write("/tmp/temp_encoded2.nbt",c->raw,NBT_COMPRESS_NONE);
-		fprintf(stdout,"region size\t after=%u\n",(unsigned int)r->size);
-		fprintf(stdout,"sector count\t after=%u\n",r->header->locations[cz][cx].sector_count);
 		
 		mcmap_region_free(r);
 		mcmap_chunk_free(c);
