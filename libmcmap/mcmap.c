@@ -1031,12 +1031,12 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 			if (d > 0) //new chunk is larger than old chunk
 				{
 				//expand memory first
-				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+d*4096)) == NULL)
+				r->size += d*4096;
+				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size)) == NULL)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
 					return -1;
 					}
-				r->size += d*4096;
 				//shuffle things starting at the end and moving backwards
 				for (i = e-1; i > r->locations[z][x]; i--)
 					{
@@ -1077,24 +1077,24 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 						}
 					}
 				//shrink memory when we're done...
-				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+d*4096)) == NULL)
+				r->size += d*4096;
+				if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size)) == NULL)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
 					return -1;
 					}
-				r->size += d*4096;
 				}
 			}
 		}
 	else //chunk doesn't exist; we must create it
 		{
-		if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size+r->header->locations[z][x].sector_count*4096)) == NULL)
+		r->size += r->header->locations[z][x].sector_count*4096;
+		if ((r->header = (struct mcmap_region_header *)realloc(r->header,r->size)) == NULL)
 			{
 			snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
 			return -1;
 			}
 		r->locations[z][x] = e-1; //put it at the end
-		r->size += r->header->locations[z][x].sector_count*4096;
 		}
 	//restore all chunk pointers after potentially invalidating them with 'realloc()' or definitely invalidating them with 'memmove()'
 	for (lz=0;lz<16;lz++)
