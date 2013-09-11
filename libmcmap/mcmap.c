@@ -161,7 +161,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 				//connect pointers
 				_mcmap_region_chunk_refresh(r,x,z);
 				//extract big-endian 32-bit integer for precise chunk size
-				r->chunks[z][x].size = cswapr_32(&(r->chunks[z][x].header->length[0]));
+				r->chunks[z][x].size = cswapr_32(&(r->chunks[z][x].header->length[0]))-1;
 				//sanity check
 				if (_mcmap_region_chunk_check(r,x,z) == -1)
 					{
@@ -206,7 +206,7 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 				if (_mcmap_region_chunk_check(r,x,z) == -1)
 					return -1;
 				//write big-endian 32-bit integer for precise chunk size
-				cswapw_32(&(r->chunks[z][x].header->length[0]),r->chunks[z][x].size);
+				cswapw_32(&(r->chunks[z][x].header->length[0]),r->chunks[z][x].size+1);
 				//write big-endian 24-bit integer to r->header->locations[z][x].offset
 				cswapw_24(&(r->header->locations[z][x].offset[0]),r->locations[z][x]);
 				//write big-endian 32-bit integer to r->header->dates[z][x]
@@ -291,7 +291,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	//drill past root container
 	if ((t = nbt_child_find(c->raw,NBT_COMPOUND,"Level")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Compound \'Level\' not found as child of root tag");
 		return NULL;
 		}
 	//read biomes
@@ -299,7 +299,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		{
 		if (p->payload.p_byte_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Biomes\' did not have size 256");
 			return NULL;
 			}
 		memcpy(c->geom->biomes,p->payload.p_byte_array.data,256);
@@ -307,7 +307,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	//read modified time
 	if ((p = nbt_child_find(t,NBT_LONG,"LastUpdate")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Long \'LastUpdate\' not found");
 		return NULL;
 		}
 	c->meta->mtime = p->payload.p_long;
@@ -322,13 +322,13 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	//read X & Z coords
 	if ((p = nbt_child_find(t,NBT_INT,"xPos")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int \'xPos\' not found");
 		return NULL;
 		}
 	c->x = p->payload.p_int;
 	if ((p = nbt_child_find(t,NBT_INT,"zPos")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int \'zPos\' not found");
 		return NULL;
 		}
 	c->z = p->payload.p_int;
@@ -345,14 +345,14 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		//height map
 		if ((p = nbt_child_find(t,NBT_INT_ARRAY,"HeightMap")) == NULL || p->payload.p_int_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int Array \'HeightMap\' with size 256 not found");
 			return NULL;
 			}
 		memcpy(c->light->height,p->payload.p_int_array.data,256*4);
 		//special objects
 		if ((c->special->entities = nbt_child_find(t,NBT_LIST,"Entities")) == NULL || (c->special->tile_entities = nbt_child_find(t,NBT_LIST,"TileEntities")) == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: one or both of Lists \'Entities\' & \'TileEntities\' not found");
 			return NULL;
 			}
 		c->special->tile_ticks = nbt_child_find(t,NBT_LIST,"TileTicks");
@@ -361,7 +361,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	//read sections
 	if ((t = nbt_child_find(t,NBT_LIST,"Sections")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: List \'Sections\' not found");
 		return NULL;
 		}
 	for (l = t->firstchild; l != NULL; l = l->next_sib)
@@ -370,7 +370,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		//determine Y index
 		if ((p = nbt_child_find(l,NBT_BYTE,"Y")) == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte \'Y\' not found");
 			return NULL;
 			}
 		//store Y index for a minute
@@ -378,7 +378,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		//block IDs
 		if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"Blocks")) == NULL || p->payload.p_byte_array.size != 4096)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Blocks\' with size 4096 not found");
 			return NULL;
 			}
 		//no memcpy() this time, our arrays are different types/sizes
@@ -399,7 +399,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 			{
 			if (p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Add\' did not have size 2048");
 				return NULL;
 				}
 			i=0;
@@ -421,7 +421,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		//block metadata
 		if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"Data")) == NULL || p->payload.p_byte_array.size != 2048)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Data\' with size 2048 not found");
 			return NULL;
 			}
 		i=0;
@@ -445,7 +445,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 			//block-emitted light
 			if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"BlockLight")) == NULL || p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Block Light\' with size 2048 not found");
 				return NULL;
 				}
 			i=0;
@@ -466,7 +466,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 			//sky-emitted light
 			if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"SkyLight")) == NULL || p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'SkyLight\' with size 2048 not found");
 				return NULL;
 				}
 			i=0;
@@ -850,14 +850,14 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			}
 		memcpy(HeightMap->payload.p_int_array.data,c->light->height,256*4);
 		//handle sky & block light
-		for (loop = Sections->firstchild; loop != NULL; loop = loop->next_sib)
+		/*for (loop = Sections->firstchild; loop != NULL; loop = loop->next_sib)
 			{
 			//FIXME - i wonder if we could write 'mcmap_chunk_light_update()' and call it here rather than just deleting everything?
 			if (ishere1 && (probe = nbt_child_find(loop,NBT_BYTE_ARRAY,"SkyLight")) != NULL)
 				nbt_free(nbt_separate(probe));
 			if (ishere1 && (probe = nbt_child_find(loop,NBT_BYTE_ARRAY,"BlockLight")) != NULL)
 				nbt_free(nbt_separate(probe));
-			}
+			}*/
 		}
 	if (c->meta != NULL)
 		{
