@@ -410,9 +410,9 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 					for (x=0;x<16;x++)
 						{
 						if (i%2 == 0)
-							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0xF0))<<4)&0x0F00);
-						else
 							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0x0F))<<8)&0x0F00);
+						else
+							c->geom->blocks[y][z][x] = c->geom->blocks[y][z][x] | ((((uint16_t)(p->payload.p_byte_array.data[i/2]&0xF0))<<4)&0x0F00);
 						i++;
 						}
 					}
@@ -432,9 +432,9 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				for (x=0;x<16;x++)
 					{
 					if (i%2 == 0)
-						c->geom->data[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
-					else
 						c->geom->data[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+					else
+						c->geom->data[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 					i++;
 					}
 				}
@@ -456,9 +456,9 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 					for (x=0;x<16;x++)
 						{
 						if (i%2 == 0)
-							c->light->block[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
-						else
 							c->light->block[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						else
+							c->light->block[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 						i++;
 						}
 					}
@@ -477,9 +477,9 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 					for (x=0;x<16;x++)
 						{
 						if (i%2 == 0)
-							c->light->sky[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
-						else
 							c->light->sky[y][z][x] =  (p->payload.p_byte_array.data[i/2]&0x0F);
+						else
+							c->light->sky[y][z][x] = ((p->payload.p_byte_array.data[i/2]&0xF0)>>4)&0x0F;
 						i++;
 						}
 					}
@@ -772,9 +772,9 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 							for (x=0;x<16;x++)
 								{
 								if (j%2 == 0)
-									probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->blocks[y][z][x])>>4)&0x00F0);
+									probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->blocks[y][z][x])>>8)&0x000F);
 								else
-									probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->blocks[y][z][x])>>8)&0x000F);
+									probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->blocks[y][z][x])>>4)&0x00F0);
 								j++;
 								}
 							}
@@ -812,9 +812,9 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						for (x=0;x<16;x++)
 							{
 							if (j%2 == 0)
-								probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->data[y][z][x])<<4)&0xF0);
+								probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->geom->data[y][z][x])<<0)&0x0F);
 							else
-								probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->data[y][z][x])<<0)&0x0F);
+								probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->geom->data[y][z][x])<<4)&0xF0);
 							j++;
 							}
 						}

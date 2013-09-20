@@ -11,6 +11,7 @@ int main(int argc, char **argv)
 	struct mcmap_region *r;
 	unsigned int cx,cz;
 	struct mcmap_chunk *c;
+	int x,z;
 	
 	if ((r = mcmap_region_read(0,0,INP_MAP)) == NULL)
 		{
@@ -27,22 +28,46 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 			return -1;
 			}
-		//fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
-		//nbt_print_ascii(stdout,c->raw,3,16);
-		//fprintf(stdout,"\n");
+		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
+		nbt_print_ascii(stdout,c->raw,6,8);
+		//nbt_file_write("/tmp/temp-decoded.nbt",c->raw,NBT_COMPRESS_NONE);
+		fprintf(stdout,"\n");
 		
-		//nbt_file_write("/tmp/temp_encoded1.nbt",c->raw,NBT_COMPRESS_NONE);
-		if (mcmap_chunk_write(r,cx,cz,c,1) == -1)
+		fprintf(stdout,"HeightMap:\n");
+		for (z=0;z<4;z++)
 			{
-			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-			return -1;
+			for (x=0;x<16;x++)
+				fprintf(stdout,"%02d ",c->light->height[z][x]);
+			fprintf(stdout,"\n");
 			}
-		if (mcmap_region_write(r,0,0,"/Users/peter/Library/Application Support/minecraft/saves/New World/") == -1)
+		fprintf(stdout,"SkyLight:\n");
+		for (z=0;z<4;z++)
 			{
-			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-			return -1;
+			for (x=0;x<16;x++)
+				fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
+			fprintf(stdout,"\n");
 			}
-		//nbt_file_write("/tmp/temp_encoded2.nbt",c->raw,NBT_COMPRESS_NONE);
+		fprintf(stdout,"BlockLight:\n");
+		for (z=0;z<4;z++)
+			{
+			for (x=0;x<16;x++)
+				fprintf(stdout,"%02x ",c->light->block[64][z][x]);
+			fprintf(stdout,"\n");
+			}
+		fprintf(stdout,"Blocks:\n");
+		for (z=0;z<4;z++)
+			{
+			for (x=0;x<16;x++)
+				fprintf(stdout,"%02x ",c->geom->blocks[64][z][x]);
+			fprintf(stdout,"\n");
+			}
+		fprintf(stdout,"Block Data:\n");
+		for (z=0;z<4;z++)
+			{
+			for (x=0;x<16;x++)
+				fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
+			fprintf(stdout,"\n");
+			}
 		
 		mcmap_region_free(r);
 		mcmap_chunk_free(c);
