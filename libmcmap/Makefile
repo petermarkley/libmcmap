@@ -1,5 +1,5 @@
 CMODULES=mcmap.c libnbt/nbt.c test.c
-CFLAGS=-lz
+CFLAGS=-lz -lm
 APPLICATION=test
 
 all:
