@@ -228,12 +228,13 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 			nextin += 2;
 			if (num > 0)
 				{
-				if ((t[0]->payload.p_string = (char *)calloc(num,1)) == NULL)
+				if ((t[0]->payload.p_string = (char *)calloc(num+1,1)) == NULL)
 					{
 					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 					return -1;
 					}
 				memcpy(t[0]->payload.p_string,&(input[nextin]),num);
+				t[0]->payload.p_string[num] = '\0';
 				nextin += num;
 				}
 			break;
