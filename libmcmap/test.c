@@ -3,7 +3,7 @@
 #include "./mcmap.h"
 #include "./libnbt/nbt.h"
 
-#define INP_MAP "/Users/peter/projects/interactive/minecraft/btcmines/libmcmap/test_map/saves/New World/"
+#define INP_MAP "./test_map/saves/New World/"
 
 int main(int argc, char **argv)
 	{
