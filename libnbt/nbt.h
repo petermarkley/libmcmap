@@ -36,7 +36,7 @@
 #define __LIBNBT_HEADER
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdio.h>
 
 #define NBT_LIBNAME "libnbt"
 #define NBT_MAXSTR 2048
