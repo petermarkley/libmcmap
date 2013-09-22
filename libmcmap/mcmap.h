@@ -302,7 +302,7 @@ struct mcmap_region
 	size_t size; //byte size of region file
 	};
 
-//searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
+//searches the given path to a minecraft region folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
 struct mcmap_region *mcmap_region_read(int ix, int iz, const char *);
 
@@ -323,11 +323,11 @@ void mcmap_region_free(struct mcmap_region *);
 // stage 5: native minecraft memory structure
 // ------------------------------------------
 
-//read mode for 'mcmap_chunk_read()'
+//read mode for 'mcmap_chunk_read()' & 'mcmap_level_read()'
 typedef enum
 	{
-	MCMAP_READ_PARTIAL, //load only the 'geom' & 'meta' members of 'struct mcmap_chunk' to save memory
-	MCMAP_READ_FULL //load entire 'struct mcmap_chunk' from raw NBT data
+	MCMAP_READ_PARTIAL, //load nothing extra, to save memory on simple read operations
+	MCMAP_READ_FULL //load everything possible, for intensive edits (may use LOTS of memory)
 	} mcmap_readmode;
 
 //geometry
@@ -375,7 +375,7 @@ struct mcmap_chunk
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
-//on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on error
+//on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
 struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode, int rem);
 
 //update height map based on geometry (unnecessary before calling 'mcmap_chunk_write()'; will be called anyway)
@@ -387,5 +387,38 @@ int mcmap_chunk_write(struct mcmap_region *, int x, int z, struct mcmap_chunk *,
 
 //free all memory allocated in 'mcmap_chunk_read()' or 'mcmap_chunk_new()'
 void mcmap_chunk_free(struct mcmap_chunk *);
+
+
+//level-wide processing
+//---------------------
+
+struct mcmap_level_region
+	{
+	struct mcmap_region *raw; //region file in memory
+	struct mcmap_chunk *chunks[16][16]; //2D array of pointers, so that each one is allowed to be NULL
+	};
+struct mcmap_level_world
+	{
+	struct mcmap_level_region ***regions; //dynamically-sized 2D array of pointers, because a world can be any size
+	int start_x, start_z; //index (0,0) in a region array should correspond to the northwesternmost corner of the generated map, recorded here
+	int size_x, size_z; //size of the region array
+	};
+struct mcmap_level //this is the big daddy that should contain everything
+	{
+	struct mcmap_level_world overworld, nether, end; //worlds in the level
+	struct nbt_tag *meta; //interpreted 'level.dat' file
+	};
+//'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block
+//from the first chunk in region (overworld.start_x,overworld.start_z).
+
+//creates and returns a level struct by reading the minecraft map at the given path;
+// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
+// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
+// (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
+// the raw data at each stage; returns NULL on failure
+struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem);
+
+//free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
+void mcmap_level_free(struct mcmap_level *);
 
 #endif

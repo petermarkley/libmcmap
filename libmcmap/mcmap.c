@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
@@ -94,7 +95,7 @@ int _mcmap_region_chunk_check(struct mcmap_region *r, int x, int z)
 	return 0;
 	}
 
-//searches the given path to a minecraft map folder and parses the region file for the given X & Z region coordinates
+//searches the given path to a minecraft region folder and parses the region file for the given X & Z region coordinates
 //returns pointer to region memory structure; if error returns NULL
 struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	{
@@ -105,12 +106,12 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	struct mcmap_region *r;
 	unsigned int x,z,i;
 	
-	//resolve filename from map directory...
+	//resolve filename from regions directory...
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		snprintf(r_name, MCMAP_MAXSTR, "%sregion/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%sr.%d.%d.mca", path, ix, iz);
 	else
-		snprintf(r_name, MCMAP_MAXSTR, "%s/region/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
 	//open file...
 	if ((r_file = fopen(r_name,"r")) == NULL)
 		{
@@ -250,7 +251,7 @@ void mcmap_region_free(struct mcmap_region *r)
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
-//on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on error
+//on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
 struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmode mode, int rem)
 	{
 	nbt_compression_type type;
@@ -1204,5 +1205,212 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 			free(c->special);
 		free(c);
 		}
+	return;
+	}
+
+//worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+//returns 0 on success and -1 on failure
+int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap_readmode mode, int rem)
+	{
+	DIR *d;
+	struct dirent *e;
+	int minx,minz,maxx,maxz;
+	int x,z, ix,iz, lx,lz;
+	int first;
+	
+	//open directory stream
+	if ((d = opendir(path)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"opendir(\"%s\") returned NULL",path);
+		return -1;
+		}
+	//scan directory to determine the world limits
+	first = 1;
+	while ((e = readdir(d)) != NULL)
+		{
+		if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
+			{
+			if (first)
+				{
+				first = 0;
+				minx = maxx = x;
+				minz = maxz = z;
+				}
+			else
+				{
+				if (x < minx)
+					minx = x;
+				if (x > maxx)
+					maxx = x;
+				if (z < minz)
+					minz = z;
+				if (z > maxz)
+					maxz = z;
+				}
+			}
+		}
+	
+	//initialize world
+	w->start_x = minx;
+	w->start_z = minz;
+	w->size_x = maxx-minx+1;
+	w->size_z = maxz-minz+1;
+	if ((w->regions = (struct mcmap_level_region ***)calloc(w->size_z,sizeof(struct mcmap_level_region **))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return -1;
+		}
+	for (z=0; z < w->size_z; z++)
+		{
+		if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return -1;
+			}
+		for (x=0; x < w->size_x; x++)
+			{
+			if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+				return -1;
+				}
+			}
+		}
+	
+	//populate world
+	if (mode == MCMAP_READ_FULL)
+		{
+		rewinddir(d);
+		while ((e = readdir(d)) != NULL)
+			{
+			if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
+				{
+				ix = x - w->start_x;
+				iz = z - w->start_z;
+				//read region
+				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,path)) != NULL)
+					{
+					//read chunks
+					for (lz=0;lz<16;lz++)
+						{
+						for (lx=0;lx<16;lx++)
+							w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
+						}
+					}
+				}
+			}
+		}
+	
+	//clean up
+	if (closedir(d) == -1)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"closedir() failed");
+		return -1;
+		}
+	if (!rem)
+		{
+		for (z=0; z < w->size_z; z++)
+			{
+			for (x=0; x < w->size_x; x++)
+				{
+				if (w->regions[z][x] != NULL && w->regions[z][x]->raw != NULL)
+					mcmap_region_free(w->regions[z][x]->raw);
+				}
+			}
+		}
+	return 0;
+	}
+
+//creates and returns a level struct by reading the minecraft map at the given path;
+// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
+// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
+// (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
+// the raw data at each stage; returns NULL on failure
+struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int rem)
+	{
+	struct mcmap_level *l;
+	char on[MCMAP_MAXSTR];
+	char nn[MCMAP_MAXSTR];
+	char en[MCMAP_MAXSTR];
+	char ln[MCMAP_MAXSTR];
+	int i;
+	
+	//resolve items from map directory...
+	for (i=0;path[i]!='\0';i++);
+	if (path[i-1] == '/')
+		{
+		snprintf(on,MCMAP_MAXSTR,"%sregion/",path);
+		snprintf(nn,MCMAP_MAXSTR,"%sDIM-1/",path);
+		snprintf(en,MCMAP_MAXSTR,"%sDIM1/",path);
+		snprintf(ln,MCMAP_MAXSTR,"%slevel.dat",path);
+		}
+	else
+		{
+		snprintf(on,MCMAP_MAXSTR,"%s/regions/",path);
+		snprintf(nn,MCMAP_MAXSTR,"%s/DIM-1/",path);
+		snprintf(en,MCMAP_MAXSTR,"%s/DIM1/",path);
+		snprintf(ln,MCMAP_MAXSTR,"%s/level.dat",path);
+		}
+	//allocate level...
+	if ((l = (struct mcmap_level *)calloc(1,sizeof(struct mcmap_level))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	//populate level...
+	if (_mcmap_level_world_read(on,&(l->overworld),mode,rem) == -1)
+		return NULL;
+	if (_mcmap_level_world_read(nn,&(l->nether),mode,rem) == -1)
+		return NULL;
+	if (_mcmap_level_world_read(en,&(l->end),mode,rem) == -1)
+		return NULL;
+	//read 'level.dat' file...
+	if ((l->meta = nbt_file_read(ln)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	
+	return l;
+	}
+
+//worker function for 'mcmap_level_free()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+void _mcmap_level_world_free(struct mcmap_level_world *w)
+	{
+	int x,z, lx,lz;
+	if (w == NULL)
+		return;
+	for (z=0; z < w->size_z; z++)
+		{
+		for (x=0; x < w->size_x; x++)
+			{
+			for (lz=0;lz<16;lz++)
+				{
+				for (lx=0;lx<16;lx++)
+					{
+					if (w->regions[z][x]->chunks[lz][lx] != NULL)
+						mcmap_chunk_free(w->regions[z][x]->chunks[lz][lx]);
+					}
+				}
+			if (w->regions[z][x]->raw != NULL)
+				mcmap_region_free(w->regions[z][x]->raw);
+			free(w->regions[z][x]);
+			}
+		free(w->regions[z]);
+		}
+	free(w->regions);
+	return;
+	}
+
+//free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
+void mcmap_level_free(struct mcmap_level *l)
+	{
+	if (l == NULL)
+		return;
+	_mcmap_level_world_free(&(l->overworld));
+	_mcmap_level_world_free(&(l->nether));
+	_mcmap_level_world_free(&(l->end));
+	if (l->meta != NULL)
+		nbt_free(l->meta);
 	return;
 	}

@@ -3,75 +3,86 @@
 #include "./mcmap.h"
 #include "./libnbt/nbt.h"
 
-#define INP_MAP "./test_map/saves/New World/"
-#define OUT_FIL "./test-parsed_chunk.nbt"
+#define INP_MAP "/Users/peter/projects/interactive/minecraft/btcmines/libmcmap/test_map/saves/New World/"
 
 int main(int argc, char **argv)
 	{
+	struct mcmap_level *l;
 	struct mcmap_region *r;
 	unsigned int cx,cz;
 	struct mcmap_chunk *c;
+	struct nbt_tag *p;
 	int x,z;
-	
+	cz = 0; cx = 0;
+	/*
 	if ((r = mcmap_region_read(0,0,INP_MAP)) == NULL)
 		{
-		fprintf(stderr,"couldn't parse \'%s\' for some reason\n",INP_MAP);
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	
-	cz = 0; cx = 0;
-	if (r->chunks[cz][cx].header != NULL)
+	if (r->chunks[cz][cx].header == NULL)
+		return 0;
+	//extract a single chunk and pass it to libnbt!
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
 		{
-		//extract a single chunk and pass it to libnbt!
-		if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
-			{
-			fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-			return -1;
-			}
-		fprintf(stdout,"\nNBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
-		nbt_print_ascii(stdout,c->raw,6,8);
-		//nbt_file_write("/tmp/temp-decoded.nbt",c->raw,NBT_COMPRESS_NONE);
-		fprintf(stdout,"\n");
-		
-		fprintf(stdout,"HeightMap:\n");
-		for (z=0;z<4;z++)
-			{
-			for (x=0;x<16;x++)
-				fprintf(stdout,"%02d ",c->light->height[z][x]);
-			fprintf(stdout,"\n");
-			}
-		fprintf(stdout,"SkyLight:\n");
-		for (z=0;z<4;z++)
-			{
-			for (x=0;x<16;x++)
-				fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
-			fprintf(stdout,"\n");
-			}
-		fprintf(stdout,"BlockLight:\n");
-		for (z=0;z<4;z++)
-			{
-			for (x=0;x<16;x++)
-				fprintf(stdout,"%02x ",c->light->block[64][z][x]);
-			fprintf(stdout,"\n");
-			}
-		fprintf(stdout,"Blocks:\n");
-		for (z=0;z<4;z++)
-			{
-			for (x=0;x<16;x++)
-				fprintf(stdout,"%02x ",c->geom->blocks[64][z][x]);
-			fprintf(stdout,"\n");
-			}
-		fprintf(stdout,"Block Data:\n");
-		for (z=0;z<4;z++)
-			{
-			for (x=0;x<16;x++)
-				fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
-			fprintf(stdout,"\n");
-			}
-		
-		mcmap_region_free(r);
-		mcmap_chunk_free(c);
-		}
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}*/
 	
+	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_FULL,1)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw;
+	c = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->chunks[cz][cx];
+	
+	p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
+	fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);
+	nbt_print_ascii(stdout,l->meta,-1,32);
+	fprintf(stdout,"\n");
+	fprintf(stdout,"NBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
+	//nbt_print_ascii(stdout,c->raw,3,8);
+	//fprintf(stdout,"\n");
+	
+	fprintf(stdout,"HeightMap:\n");
+	for (z=0;z<4;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02d ",c->light->height[z][x]);
+		fprintf(stdout,"\n");
+		}
+	fprintf(stdout,"SkyLight:\n");
+	for (z=0;z<4;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
+		fprintf(stdout,"\n");
+		}
+	fprintf(stdout,"BlockLight:\n");
+	for (z=0;z<16;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02x ",c->light->block[64][z][x]);
+		fprintf(stdout,"\n");
+		}
+	fprintf(stdout,"Blocks:\n");
+	for (z=0;z<4;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02x ",c->geom->blocks[64][z][x]);
+		fprintf(stdout,"\n");
+		}
+	fprintf(stdout,"Block Data:\n");
+	for (z=0;z<4;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
+		fprintf(stdout,"\n");
+		}
+	/*
+	mcmap_region_free(r);
+	mcmap_chunk_free(c);*/
+	mcmap_level_free(l);
 	return 0;
 	}
