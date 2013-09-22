@@ -127,7 +127,7 @@ struct nbt_tag *nbt_separate(struct nbt_tag *);
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
 struct nbt_tag *nbt_child_find(struct nbt_tag *, nbt_tagid, const char *);
 
-//create & return, as a child of the given parent, a tag with the given type and name; return NULL on failure
+//create & return, as a child of the given parent (may be NULL), a tag with the given type and name; return NULL on failure
 struct nbt_tag *nbt_child_new(struct nbt_tag *, nbt_tagid, const char *);
 
 //print ASCII representation of NBT structure to the given FILE stream;

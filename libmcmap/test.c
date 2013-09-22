@@ -14,20 +14,6 @@ int main(int argc, char **argv)
 	struct nbt_tag *p;
 	int x,z;
 	cz = 0; cx = 0;
-	/*
-	if ((r = mcmap_region_read(0,0,INP_MAP)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	if (r->chunks[cz][cx].header == NULL)
-		return 0;
-	//extract a single chunk and pass it to libnbt!
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}*/
 	
 	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_FULL,1)) == NULL)
 		{
@@ -80,9 +66,7 @@ int main(int argc, char **argv)
 			fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
 		fprintf(stdout,"\n");
 		}
-	/*
-	mcmap_region_free(r);
-	mcmap_chunk_free(c);*/
+	
 	mcmap_level_free(l);
 	return 0;
 	}

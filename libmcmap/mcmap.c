@@ -1217,6 +1217,8 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 	int minx,minz,maxx,maxz;
 	int x,z, ix,iz, lx,lz;
 	int first;
+	w->size_x = 0;
+	w->size_z = 0;
 	
 	//open directory stream
 	if ((d = opendir(path)) == NULL)

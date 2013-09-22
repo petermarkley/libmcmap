@@ -856,7 +856,7 @@ struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *na
 	return NULL;
 	}
 
-//create & return, as a child of the given parent, a tag with the given type and name; return NULL on failure
+//create & return, as a child of the given parent (may be NULL), a tag with the given type and name; return NULL on failure
 struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char *name)
 	{
 	struct nbt_tag *t, *loop;
