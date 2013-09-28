@@ -681,6 +681,7 @@ int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compres
 	}
 
 //load an NBT structure from a file on the disk, return NULL on failure
+//(convenience function; application programmer may bypass)
 struct nbt_tag *nbt_file_read(const char *fn)
 	{
 	struct nbt_tag *t;
@@ -731,6 +732,7 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	}
 
 //write an NBT struct to a file on the disk, return 0 on success and -1 on failure
+//(convenience function; application programmer may bypass)
 int nbt_file_write(const char *fn, struct nbt_tag *t, nbt_compression_type compress_type)
 	{
 	FILE *f;
@@ -832,6 +834,7 @@ struct nbt_tag *nbt_separate(struct nbt_tag *t)
 	}
 
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
+//(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *name)
 	{
 	struct nbt_tag *loop;
@@ -857,6 +860,7 @@ struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *na
 	}
 
 //create & return, as a child of the given parent (may be NULL), a tag with the given type and name; return NULL on failure
+//(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char *name)
 	{
 	struct nbt_tag *t, *loop;

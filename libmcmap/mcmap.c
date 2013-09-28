@@ -1208,107 +1208,101 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	return;
 	}
 
-
-//retrieve data from the given world coordinates
-
-#define _mcmap_get_resolve(w,component,x,z,default) \
-	{ \
-	int rx,rz, cx,cz, bx,bz; \
-	if ((w) == NULL) \
-		return (default); \
-	rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
-	rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
-	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
-		return (default); \
-	cx = (int)floor(((double)(x))/16.0); \
-	cz = (int)floor(((double)(z))/16.0); \
-	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
-	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-	if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
-		return (default); \
-	bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
-	bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-	return w->regions[rz][rx].chunks[cz][cx]->component[bz][bx]; \
-	}
-
-uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
-	{_mcmap_get_resolve(w,geom->blocks[y],x,z,MCMAP_AIR);}
-
-uint8_t mcmap_get_data(struct mcmap_level_world *w, int x, int y, int z)
-	{_mcmap_get_resolve(w,geom->data[y],x,z,0x00);}
-
-int8_t mcmap_get_biome(struct mcmap_level_world *w, int x, int z)
-	{_mcmap_get_resolve(w,geom->biomes,x,z,MCMAP_NOBIOME);}
-
-uint8_t mcmap_get_blocklight(struct mcmap_level_world *w, int x, int y, int z)
-	{_mcmap_get_resolve(w,light->block[y],x,z,0x00);}
-
-uint8_t mcmap_get_skylight(struct mcmap_level_world *w, int x, int y, int z)
-	{_mcmap_get_resolve(w,light->sky[y],x,z,0x00);}
-
-int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
-	{_mcmap_get_resolve(w,light->height,x,z,-1);}
-
-
-//edit data at the given world coordinates
-
-#define _mcmap_set_resolve(w,component,x,z,value) \
-	{ \
-	int rx,rz, cx,cz, bx,bz; \
-	if ((w) == NULL) \
-		return -1; \
-	rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
-	rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
-	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
-		return -1; \
-	cx = (int)floor(((double)(x))/16.0); \
-	cz = (int)floor(((double)(z))/16.0); \
-	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
-	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-	if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
-		return -1; \
-	bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
-	bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-	w->regions[rz][rx].chunks[cz][cx]->component[bz][bx] = (value); \
-	return 0; \
-	}
-
-int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
-	{_mcmap_set_resolve(w,geom->blocks[y],x,z,val);}
-
-int mcmap_set_data(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-	{_mcmap_set_resolve(w,geom->data[y],x,z,val);}
-
-int mcmap_set_biome(struct mcmap_level_world *w, int x, int z, int8_t val)
-	{_mcmap_set_resolve(w,geom->biomes,x,z,val);}
-
-int mcmap_set_blocklight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-	{_mcmap_set_resolve(w,light->block[y],x,z,val);}
-
-int mcmap_set_skylight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-	{_mcmap_set_resolve(w,light->sky[y],x,z,val);}
-
-int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
-	{_mcmap_set_resolve(w,light->height,x,z,val);}
-
-
-//retrieve the chunk struct for the given world coordinates
-struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
-	{
-	int rx,rz, cx,cz;
-	if ((w) == NULL)
-		return NULL;
-	rx = (int)floor(((double)(x))/512.0) - (w)->start_x;
-	rz = (int)floor(((double)(z))/512.0) - (w)->start_z;
-	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z)
-		return NULL;
-	cx = (int)floor(((double)(x))/16.0);
-	cz = (int)floor(((double)(z))/16.0);
-	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
-	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
-	return w->regions[rz][rx].chunks[cz][cx];
-	}
-
+//these are convenience functions; application programmer may bypass if he knows what he's doing
+//----------------------------------------------------------------------------------------------
+	//retrieve data from the given world coordinates
+	#define _mcmap_get_resolve(w,component,x,z,default) \
+		{ \
+		int rx,rz, cx,cz, bx,bz; \
+		if ((w) == NULL) \
+			return (default); \
+		rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
+		rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
+		if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
+			return (default); \
+		cx = (int)floor(((double)(x))/16.0); \
+		cz = (int)floor(((double)(z))/16.0); \
+		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
+		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
+		if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+			return (default); \
+		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
+		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
+		return w->regions[rz][rx].chunks[cz][cx]->component[bz][bx]; \
+		}
+	uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
+		{_mcmap_get_resolve(w,geom->blocks[y],x,z,MCMAP_AIR);}
+	
+	uint8_t mcmap_get_data(struct mcmap_level_world *w, int x, int y, int z)
+		{_mcmap_get_resolve(w,geom->data[y],x,z,0x00);}
+	
+	int8_t mcmap_get_biome(struct mcmap_level_world *w, int x, int z)
+		{_mcmap_get_resolve(w,geom->biomes,x,z,MCMAP_NOBIOME);}
+	
+	uint8_t mcmap_get_blocklight(struct mcmap_level_world *w, int x, int y, int z)
+		{_mcmap_get_resolve(w,light->block[y],x,z,0x00);}
+	
+	uint8_t mcmap_get_skylight(struct mcmap_level_world *w, int x, int y, int z)
+		{_mcmap_get_resolve(w,light->sky[y],x,z,0x00);}
+	
+	int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
+		{_mcmap_get_resolve(w,light->height,x,z,-1);}
+	
+	//edit data at the given world coordinates; return -1 if region or chunk are missing or not loaded, otherwise return 0
+	#define _mcmap_set_resolve(w,component,x,z,value) \
+		{ \
+		int rx,rz, cx,cz, bx,bz; \
+		if ((w) == NULL) \
+			return -1; \
+		rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
+		rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
+		if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
+			return -1; \
+		cx = (int)floor(((double)(x))/16.0); \
+		cz = (int)floor(((double)(z))/16.0); \
+		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
+		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
+		if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+			return -1; \
+		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
+		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
+		w->regions[rz][rx].chunks[cz][cx]->component[bz][bx] = (value); \
+		return 0; \
+		}
+	int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
+		{_mcmap_set_resolve(w,geom->blocks[y],x,z,val);}
+	
+	int mcmap_set_data(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+		{_mcmap_set_resolve(w,geom->data[y],x,z,val);}
+	
+	int mcmap_set_biome(struct mcmap_level_world *w, int x, int z, int8_t val)
+		{_mcmap_set_resolve(w,geom->biomes,x,z,val);}
+	
+	int mcmap_set_blocklight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+		{_mcmap_set_resolve(w,light->block[y],x,z,val);}
+	
+	int mcmap_set_skylight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+		{_mcmap_set_resolve(w,light->sky[y],x,z,val);}
+	
+	int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
+		{_mcmap_set_resolve(w,light->height,x,z,val);}
+	
+	//retrieve the chunk struct for the given world coordinates
+	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
+		{
+		int rx,rz, cx,cz;
+		if ((w) == NULL)
+			return NULL;
+		rx = (int)floor(((double)(x))/512.0) - (w)->start_x;
+		rz = (int)floor(((double)(z))/512.0) - (w)->start_z;
+		if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z)
+			return NULL;
+		cx = (int)floor(((double)(x))/16.0);
+		cz = (int)floor(((double)(z))/16.0);
+		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
+		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
+		return w->regions[rz][rx].chunks[cz][cx];
+		}
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure

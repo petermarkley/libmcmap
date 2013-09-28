@@ -112,9 +112,11 @@ struct nbt_tag *nbt_decode(uint8_t *input, size_t input_sz, nbt_compression_type
 int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compress_type);
 
 //load an NBT structure from a file on the disk, return NULL on failure
+//(convenience function; application programmer may bypass)
 struct nbt_tag *nbt_file_read(const char *);
 
 //save an NBT struct to a file on the disk, return 0 on success and -1 on failure
+//(convenience function; application programmer may bypass)
 int nbt_file_write(const char *, struct nbt_tag *, nbt_compression_type compress_type);
 
 //free entire tag structure
@@ -125,9 +127,11 @@ void nbt_free(struct nbt_tag *);
 struct nbt_tag *nbt_separate(struct nbt_tag *);
 
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
+//(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *, nbt_tagid, const char *);
 
 //create & return, as a child of the given parent (may be NULL), a tag with the given type and name; return NULL on failure
+//(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_new(struct nbt_tag *, nbt_tagid, const char *);
 
 //print ASCII representation of NBT structure to the given FILE stream;
