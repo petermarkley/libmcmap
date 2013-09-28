@@ -411,16 +411,6 @@ struct mcmap_level //this is the big daddy that should contain everything
 //'overworld.regions[0][0].chunks[0][0]->geom->blocks[64][0][0]' selects a block
 //from the first chunk in region (overworld.start_x,overworld.start_z).
 
-//creates and returns a level struct by reading the minecraft map at the given path;
-// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
-// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
-// (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
-// the raw data at each stage; returns NULL on failure
-struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem);
-
-//free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
-void mcmap_level_free(struct mcmap_level *);
-
 //retrieve data from the given world coordinates
 uint16_t mcmap_get_block     (struct mcmap_level_world *, int x, int y, int z);
 uint8_t  mcmap_get_data      (struct mcmap_level_world *, int x, int y, int z);
@@ -437,5 +427,15 @@ int mcmap_set_skylight  (struct mcmap_level_world *, int x, int y, int z,  uint8
 int mcmap_set_heightmap (struct mcmap_level_world *, int x,        int z,  int32_t val);
 //retrieve the chunk struct for the given world coordinates
 struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *, int x, int z);
+
+//creates and returns a level struct by reading the minecraft map at the given path;
+// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
+// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
+// (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
+// the raw data at each stage; returns NULL on failure
+struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem);
+
+//free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
+void mcmap_level_free(struct mcmap_level *);
 
 #endif
