@@ -400,7 +400,7 @@ struct mcmap_level_region
 	};
 struct mcmap_level_world
 	{
-	struct mcmap_level_region **regions; //dynamically-sized 2D array, because a world can be any size
+	struct mcmap_level_region ***regions; //dynamically-sized 2D array, because a world can be any size
 	int start_x, start_z; //index (0,0) in a region array should correspond to the northwesternmost corner of the generated map, recorded here
 	int size_x, size_z; //size of the region array
 	};
@@ -427,8 +427,13 @@ struct mcmap_level //this is the big daddy that should contain everything
 	int mcmap_set_blocklight(struct mcmap_level_world *, int x, int y, int z,  uint8_t val);
 	int mcmap_set_skylight  (struct mcmap_level_world *, int x, int y, int z,  uint8_t val);
 	int mcmap_set_heightmap (struct mcmap_level_world *, int x,        int z,  int32_t val);
-	//retrieve the chunk struct for the given world coordinates
+	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *, int x, int z);
+
+//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when
+//available in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//return 0 on success and -1 on failure
+int mcmap_light_update(struct mcmap_level_world *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with

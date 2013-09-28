@@ -1224,11 +1224,11 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0); \
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-		if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL) \
 			return (default); \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-		return w->regions[rz][rx].chunks[cz][cx]->component[bz][bx]; \
+		return w->regions[rz][rx]->chunks[cz][cx]->component[bz][bx]; \
 		}
 	uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
 		{_mcmap_get_resolve(w,geom->blocks[y],x,z,MCMAP_AIR);}
@@ -1262,11 +1262,11 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0); \
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-		if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL) \
 			return -1; \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-		w->regions[rz][rx].chunks[cz][cx]->component[bz][bx] = (value); \
+		w->regions[rz][rx]->chunks[cz][cx]->component[bz][bx] = (value); \
 		return 0; \
 		}
 	int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
@@ -1287,7 +1287,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
 		{_mcmap_set_resolve(w,light->height,x,z,val);}
 	
-	//retrieve the chunk struct for the given world coordinates
+	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
 		{
 		int rx,rz, cx,cz;
@@ -1301,8 +1301,41 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0);
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
-		return w->regions[rz][rx].chunks[cz][cx];
+		return w->regions[rz][rx]->chunks[cz][cx];
 		}
+
+//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when
+//available in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//return 0 on success and -1 on failure
+int mcmap_light_update(struct mcmap_level_world *w)
+	{
+	int **loaded;
+	int x,y,z;
+	uint8_t light;
+	
+	//allocate metadata for our own use
+	if ((loaded = (int **)calloc(w->size_z*32,sizeof(int *))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return -1;
+		}
+	for (z=0; z < w->size_z*32; z++)
+		{
+		if ((loaded[z] = (int *)calloc(w->size_x*32,sizeof(int))) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return -1;
+			}
+		}
+	
+	//FIXME . . .
+	
+	//clean up
+	for (z=0; z < w->size_z*32; z++)
+		free(loaded[z]);
+	free(loaded);
+	return 0;
+	}
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
@@ -1353,17 +1386,25 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 	w->start_z = minz;
 	w->size_x = maxx-minx+1;
 	w->size_z = maxz-minz+1;
-	if ((w->regions = (struct mcmap_level_region **)calloc(w->size_z,sizeof(struct mcmap_level_region *))) == NULL)
+	if ((w->regions = (struct mcmap_level_region ***)calloc(w->size_z,sizeof(struct mcmap_level_region **))) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return -1;
 		}
 	for (z=0; z < w->size_z; z++)
 		{
-		if ((w->regions[z] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
+		if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
 			{
 			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 			return -1;
+			}
+		for (x=0; x < w->size_x; x++)
+			{
+			if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+				return -1;
+				}
 			}
 		}
 	
@@ -1378,13 +1419,13 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 				ix = x - w->start_x;
 				iz = z - w->start_z;
 				//read region
-				if ((w->regions[iz][ix].raw = mcmap_region_read(x,z,path)) != NULL)
+				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,path)) != NULL)
 					{
 					//read chunks
 					for (lz=0;lz<16;lz++)
 						{
 						for (lx=0;lx<16;lx++)
-							w->regions[iz][ix].chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix].raw->chunks[lz][lx]),mode,rem);
+							w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
 						}
 					}
 				}
@@ -1403,8 +1444,8 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 			{
 			for (x=0; x < w->size_x; x++)
 				{
-				if (w->regions[z][x].raw != NULL)
-					mcmap_region_free(w->regions[z][x].raw);
+				if (w->regions[z][x] != NULL && w->regions[z][x]->raw != NULL)
+					mcmap_region_free(w->regions[z][x]->raw);
 				}
 			}
 		}
@@ -1474,16 +1515,20 @@ void _mcmap_level_world_free(struct mcmap_level_world *w)
 		{
 		for (x=0; x < w->size_x; x++)
 			{
-			for (lz=0;lz<16;lz++)
+			if (w->regions[z][x] != NULL)
 				{
-				for (lx=0;lx<16;lx++)
+				for (lz=0;lz<16;lz++)
 					{
-					if (w->regions[z][x].chunks[lz][lx] != NULL)
-						mcmap_chunk_free(w->regions[z][x].chunks[lz][lx]);
+					for (lx=0;lx<16;lx++)
+						{
+						if (w->regions[z][x]->chunks[lz][lx] != NULL)
+							mcmap_chunk_free(w->regions[z][x]->chunks[lz][lx]);
+						}
 					}
+				if (w->regions[z][x]->raw != NULL)
+					mcmap_region_free(w->regions[z][x]->raw);
+				free(w->regions[z][x]);
 				}
-			if (w->regions[z][x].raw != NULL)
-				mcmap_region_free(w->regions[z][x].raw);
 			}
 		free(w->regions[z]);
 		}
