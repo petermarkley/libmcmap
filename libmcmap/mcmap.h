@@ -395,11 +395,11 @@ void mcmap_chunk_free(struct mcmap_chunk *);
 struct mcmap_level_region
 	{
 	struct mcmap_region *raw; //region file in memory
-	struct mcmap_chunk *chunks[16][16]; //2D array of pointers, so that each one is allowed to be NULL
+	struct mcmap_chunk *chunks[32][32]; //2D array of pointers, so that each one is allowed to be NULL
 	};
 struct mcmap_level_world
 	{
-	struct mcmap_level_region ***regions; //dynamically-sized 2D array of pointers, because a world can be any size
+	struct mcmap_level_region **regions; //dynamically-sized 2D array, because a world can be any size
 	int start_x, start_z; //index (0,0) in a region array should correspond to the northwesternmost corner of the generated map, recorded here
 	int size_x, size_z; //size of the region array
 	};
@@ -408,7 +408,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	struct mcmap_level_world overworld, nether, end; //worlds in the level
 	struct nbt_tag *meta; //interpreted 'level.dat' file
 	};
-//'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block
+//'overworld.regions[0][0].chunks[0][0]->geom->blocks[64][0][0]' selects a block
 //from the first chunk in region (overworld.start_x,overworld.start_z).
 
 //creates and returns a level struct by reading the minecraft map at the given path;
@@ -420,5 +420,22 @@ struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem)
 
 //free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
 void mcmap_level_free(struct mcmap_level *);
+
+//retrieve data from the given world coordinates
+uint16_t mcmap_get_block     (struct mcmap_level_world *, int x, int y, int z);
+uint8_t  mcmap_get_data      (struct mcmap_level_world *, int x, int y, int z);
+int8_t   mcmap_get_biome     (struct mcmap_level_world *, int x,        int z);
+uint8_t  mcmap_get_blocklight(struct mcmap_level_world *, int x, int y, int z);
+uint8_t  mcmap_get_skylight  (struct mcmap_level_world *, int x, int y, int z);
+int32_t  mcmap_get_heightmap (struct mcmap_level_world *, int x,        int z);
+//edit data at the given world coordinates
+int mcmap_set_block     (struct mcmap_level_world *, int x, int y, int z, uint16_t val);
+int mcmap_set_data      (struct mcmap_level_world *, int x, int y, int z,  uint8_t val);
+int mcmap_set_biome     (struct mcmap_level_world *, int x,        int z,   int8_t val);
+int mcmap_set_blocklight(struct mcmap_level_world *, int x, int y, int z,  uint8_t val);
+int mcmap_set_skylight  (struct mcmap_level_world *, int x, int y, int z,  uint8_t val);
+int mcmap_set_heightmap (struct mcmap_level_world *, int x,        int z,  int32_t val);
+//retrieve the chunk struct for the given world coordinates
+struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *, int x, int z);
 
 #endif

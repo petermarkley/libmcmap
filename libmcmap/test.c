@@ -20,8 +20,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw;
-	c = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->chunks[cz][cx];
+	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x].raw;
+	c = mcmap_get_chunk(&(l->overworld),0,0);
 	
 	p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
 	fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);

@@ -1257,25 +1257,17 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 	w->start_z = minz;
 	w->size_x = maxx-minx+1;
 	w->size_z = maxz-minz+1;
-	if ((w->regions = (struct mcmap_level_region ***)calloc(w->size_z,sizeof(struct mcmap_level_region **))) == NULL)
+	if ((w->regions = (struct mcmap_level_region **)calloc(w->size_z,sizeof(struct mcmap_level_region *))) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return -1;
 		}
 	for (z=0; z < w->size_z; z++)
 		{
-		if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
+		if ((w->regions[z] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
 			{
 			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 			return -1;
-			}
-		for (x=0; x < w->size_x; x++)
-			{
-			if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
-				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-				return -1;
-				}
 			}
 		}
 	
@@ -1290,13 +1282,13 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 				ix = x - w->start_x;
 				iz = z - w->start_z;
 				//read region
-				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,path)) != NULL)
+				if ((w->regions[iz][ix].raw = mcmap_region_read(x,z,path)) != NULL)
 					{
 					//read chunks
 					for (lz=0;lz<16;lz++)
 						{
 						for (lx=0;lx<16;lx++)
-							w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
+							w->regions[iz][ix].chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix].raw->chunks[lz][lx]),mode,rem);
 						}
 					}
 				}
@@ -1315,8 +1307,8 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 			{
 			for (x=0; x < w->size_x; x++)
 				{
-				if (w->regions[z][x] != NULL && w->regions[z][x]->raw != NULL)
-					mcmap_region_free(w->regions[z][x]->raw);
+				if (w->regions[z][x].raw != NULL)
+					mcmap_region_free(w->regions[z][x].raw);
 				}
 			}
 		}
@@ -1390,13 +1382,12 @@ void _mcmap_level_world_free(struct mcmap_level_world *w)
 				{
 				for (lx=0;lx<16;lx++)
 					{
-					if (w->regions[z][x]->chunks[lz][lx] != NULL)
-						mcmap_chunk_free(w->regions[z][x]->chunks[lz][lx]);
+					if (w->regions[z][x].chunks[lz][lx] != NULL)
+						mcmap_chunk_free(w->regions[z][x].chunks[lz][lx]);
 					}
 				}
-			if (w->regions[z][x]->raw != NULL)
-				mcmap_region_free(w->regions[z][x]->raw);
-			free(w->regions[z][x]);
+			if (w->regions[z][x].raw != NULL)
+				mcmap_region_free(w->regions[z][x].raw);
 			}
 		free(w->regions[z]);
 		}
@@ -1415,4 +1406,105 @@ void mcmap_level_free(struct mcmap_level *l)
 	if (l->meta != NULL)
 		nbt_free(l->meta);
 	return;
+	}
+
+
+//retrieve data from the given world coordinates
+
+#define _mcmap_get_resolve(w,component,x,z,default) \
+	{ \
+	int rx,rz, cx,cz, bx,bz; \
+	if ((w) == NULL) \
+		return (default); \
+	rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
+	rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
+	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
+		return (default); \
+	cx = (int)floor(((double)(x))/16.0); \
+	cz = (int)floor(((double)(z))/16.0); \
+	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
+	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
+	if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+		return (default); \
+	bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
+	bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
+	return w->regions[rz][rx].chunks[cz][cx]->component[bz][bx]; \
+	}
+
+uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
+	{_mcmap_get_resolve(w,geom->blocks[y],x,z,MCMAP_AIR);}
+
+uint8_t mcmap_get_data(struct mcmap_level_world *w, int x, int y, int z)
+	{_mcmap_get_resolve(w,geom->data[y],x,z,0x00);}
+
+int8_t mcmap_get_biome(struct mcmap_level_world *w, int x, int z)
+	{_mcmap_get_resolve(w,geom->biomes,x,z,MCMAP_NOBIOME);}
+
+uint8_t mcmap_get_blocklight(struct mcmap_level_world *w, int x, int y, int z)
+	{_mcmap_get_resolve(w,light->block[y],x,z,0x00);}
+
+uint8_t mcmap_get_skylight(struct mcmap_level_world *w, int x, int y, int z)
+	{_mcmap_get_resolve(w,light->sky[y],x,z,0x00);}
+
+int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
+	{_mcmap_get_resolve(w,light->height,x,z,-1);}
+
+
+//edit data at the given world coordinates
+
+#define _mcmap_set_resolve(w,component,x,z,value) \
+	{ \
+	int rx,rz, cx,cz, bx,bz; \
+	if ((w) == NULL) \
+		return -1; \
+	rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
+	rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
+	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
+		return -1; \
+	cx = (int)floor(((double)(x))/16.0); \
+	cz = (int)floor(((double)(z))/16.0); \
+	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
+	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
+	if ((w)->regions[rz][rx].chunks[cz][cx] == NULL) \
+		return -1; \
+	bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
+	bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
+	w->regions[rz][rx].chunks[cz][cx]->component[bz][bx] = (value); \
+	return 0; \
+	}
+
+int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
+	{_mcmap_set_resolve(w,geom->blocks[y],x,z,val);}
+
+int mcmap_set_data(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+	{_mcmap_set_resolve(w,geom->data[y],x,z,val);}
+
+int mcmap_set_biome(struct mcmap_level_world *w, int x, int z, int8_t val)
+	{_mcmap_set_resolve(w,geom->biomes,x,z,val);}
+
+int mcmap_set_blocklight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+	{_mcmap_set_resolve(w,light->block[y],x,z,val);}
+
+int mcmap_set_skylight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
+	{_mcmap_set_resolve(w,light->sky[y],x,z,val);}
+
+int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
+	{_mcmap_set_resolve(w,light->height,x,z,val);}
+
+
+//retrieve the chunk struct for the given world coordinates
+struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
+	{
+	int rx,rz, cx,cz;
+	if ((w) == NULL)
+		return NULL;
+	rx = (int)floor(((double)(x))/512.0) - (w)->start_x;
+	rz = (int)floor(((double)(z))/512.0) - (w)->start_z;
+	if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z)
+		return NULL;
+	cx = (int)floor(((double)(x))/16.0);
+	cz = (int)floor(((double)(z))/16.0);
+	cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
+	cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
+	return w->regions[rz][rx].chunks[cz][cx];
 	}
