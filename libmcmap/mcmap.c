@@ -105,6 +105,8 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	uint8_t *buff;
 	struct mcmap_region *r;
 	unsigned int x,z,i;
+	if (path == NULL)
+		return NULL;
 	
 	//resolve filename from regions directory...
 	for (i=0;path[i]!='\0';i++);
@@ -246,6 +248,39 @@ void mcmap_region_free(struct mcmap_region *r)
 	{
 	free(r->header); //free the memory buffer of the file contents
 	free(r); //free the navigation nodes that were connected throughout the buffer
+	return;
+	}
+
+//return 1 if light passes through the given block totally unaltered, otherwise 0
+int _mcmap_chunk_height_update_test(mcmap_blockid i)
+	{
+	switch (i)
+		{
+		case MCMAP_AIR:
+		case MCMAP_GLASS:
+		case MCMAP_GLASS_PANE:
+			return 1;
+			break;
+		default: return 0; break;
+		}
+	return 0;
+	}
+
+//update height map based on geometry
+void mcmap_chunk_height_update(struct mcmap_chunk *c)
+	{
+	int x,y,z;
+	if (c != NULL && c->geom != NULL && c->light != NULL)
+		{
+		for (z=0;z<16;z++)
+			{
+			for (x=0;x<16;x++)
+				{
+				for (y=256; y>0 && _mcmap_chunk_height_update_test(c->geom->blocks[y-1][z][x]); y--);
+				c->light->height[z][x] = y;
+				}
+			}
+		}
 	return;
 	}
 
@@ -496,39 +531,6 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 		}
 	
 	return c;
-	}
-
-//return 1 if light passes through the given block totally unaltered, otherwise 0
-int _mcmap_chunk_height_update_test(mcmap_blockid i)
-	{
-	switch (i)
-		{
-		case MCMAP_AIR:
-		case MCMAP_GLASS:
-		case MCMAP_GLASS_PANE:
-			return 1;
-			break;
-		default: return 0; break;
-		}
-	return 0;
-	}
-
-//update height map based on geometry (unnecessary before calling 'mcmap_chunk_write()'; will be called anyway)
-void mcmap_chunk_height_update(struct mcmap_chunk *c)
-	{
-	int x,y,z;
-	if (c != NULL && c->geom != NULL && c->light != NULL)
-		{
-		for (z=0;z<16;z++)
-			{
-			for (x=0;x<16;x++)
-				{
-				for (y=256; y>0 && _mcmap_chunk_height_update_test(c->geom->blocks[y-1][z][x]); y--);
-				c->light->height[z][x] = y;
-				}
-			}
-		}
-	return;
 	}
 
 //save all existing components of the given chunk to raw NBT data; return 0 on success and -1 on failure
@@ -826,7 +828,6 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 	if (c->light != NULL)
 		{
 		//handle height map
-		mcmap_chunk_height_update(c);
 		if (!ishere1 || (HeightMap = nbt_child_find(Level,NBT_INT_ARRAY,"HeightMap")) == NULL)
 			{
 			if ((HeightMap = nbt_child_new(Level,NBT_INT_ARRAY,"HeightMap")) == NULL)
@@ -1304,16 +1305,62 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		return w->regions[rz][rx]->chunks[cz][cx];
 		}
 
-//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when
-//available in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//return level of light emitted by the given block type < http://minecraft.gamepedia.com/Light#Light-emitting_blocks >
+uint8_t _mcmap_light_update_emit(mcmap_blockid i)
+	{
+	switch (i)
+		{
+		case MCMAP_BEACON:
+		case MCMAP_END_PORTAL:
+		case MCMAP_FIRE:
+		case MCMAP_GLOWSTONE:
+		case MCMAP_JACK_O_LANTERN:
+		case MCMAP_FLOWING_LAVA:
+		case MCMAP_LAVA:
+		case MCMAP_LOCKED_CHEST:
+		case MCMAP_LIT_REDSTONE_LAMP:
+			return 0x0f; //light level 15
+			break;
+		case MCMAP_TORCH:
+			return 0x0e; //light level 14
+			break;
+		case MCMAP_LIT_FURNACE:
+			return 0x0d; //light level 13
+			break;
+		case MCMAP_NETHER_PORTAL:
+			return 0x0b; //light level 12
+			break;
+		case MCMAP_GLOWING_REDSTONE_ORE:
+		case MCMAP_LIT_REDSTONE_REPEATER:
+		case MCMAP_LIT_REDSTONE_COMPARATOR:
+			return 0x09; //light level 9
+			break;
+		case MCMAP_ENDER_CHEST:
+		case MCMAP_LIT_REDSTONE_TORCH:
+			return 0x07; //light level 7
+			break;
+		case MCMAP_BREWING_STAND:
+		case MCMAP_BROWN_MUSHROOM:
+		case MCMAP_DRAGON_EGG:
+		case MCMAP_END_PORTAL_FRAME:
+			return 0x01; //light level 1
+			break;
+		default: return 0x00; break;
+		}
+	return 0x00;
+	}
+
+//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when available,
+//in the given region folder, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *w)
+int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 	{
 	int **loaded;
-	int x,y,z;
-	uint8_t light;
+	int x,y,z, lx,lz, rx,rz;
+	int light;
+	struct mcmap_chunk *c;
 	
-	//allocate metadata for our own use
+	//allocate private metadata
 	if ((loaded = (int **)calloc(w->size_z*32,sizeof(int *))) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
@@ -1328,7 +1375,91 @@ int mcmap_light_update(struct mcmap_level_world *w)
 			}
 		}
 	
-	//FIXME . . .
+	//1st pass: prepare world & private metadata
+	for (lz=0; lz < w->size_z*32; lz++)
+		{
+		for (lx=0; lx < w->size_x*32; lx++)
+			{
+			if ((c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL)
+				{
+				loaded[lz][lx] = 1; //remember which chunks are loaded
+				mcmap_chunk_height_update(c); //update the heightmap
+				for (y=0;y<256;y++) //remove all light except emitting blocks
+					{
+					for (z=0;z<16;z++)
+						{
+						for (x=0;x<16;x++)
+							{
+							c->light->block[y][z][x] = _mcmap_light_update_emit(c->geom->blocks[y][z][x]);
+							if (y >= c->light->height[z][x])
+								c->light->sky[y][z][x] = 0x0f;
+							else
+								c->light->sky[y][z][x] = 0x00;
+							}
+						}
+					}
+				}
+			else
+				loaded[lz][lx] = 0; //remember which chunks are loaded
+			}
+		}
+	
+	//2nd pass: use metadata to load adjacent chunks
+	for (lz=0; lz < w->size_z*32; lz++)
+		{
+		for (lx=0; lx < w->size_x*32; lx++)
+			{
+			if (loaded[lz][lx] == 1)
+				{
+				if (lz > 0 && loaded[lz-1][lx] == 0) //load northward chunk
+					{
+					rx=lx/32; rz=(lz-1)/32;
+					 x=lx%32;  z=(lz-1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz-1][lx] = 2;
+					}
+				if (lx < w->size_x-1 && loaded[lz][lx+1] == 0) //load eastward chunk
+					{
+					rx=(lx+1)/32; rz=lz/32;
+					 x=(lx+1)%32;  z=lz%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz][lx+1] = 2;
+					}
+				if (lz < w->size_z-1 && loaded[lz+1][lx] == 0) //load southward chunk
+					{
+					rx=lx/32; rz=(lz+1)/32;
+					 x=lx%32;  z=(lz+1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz+1][lx] = 2;
+					}
+				if (lx > 0 && loaded[lz][lx-1] == 0) //load westward chunk
+					{
+					rx=(lx-1)/32; rz=lz/32;
+					 x=(lx-1)%32;  z=lz%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz][lx-1] = 2;
+					}
+				}
+			}
+		}
+	
+	//3rd pass: propagate light
+	for (light=15; light>=0; light--)
+		{
+		//FIXME - loop through entire world
+		}
 	
 	//clean up
 	for (z=0; z < w->size_z*32; z++)
@@ -1465,6 +1596,8 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int 
 	char en[MCMAP_MAXSTR];
 	char ln[MCMAP_MAXSTR];
 	int i;
+	if (path == NULL)
+		return NULL;
 	
 	//resolve items from map directory...
 	for (i=0;path[i]!='\0';i++);
@@ -1488,6 +1621,13 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int 
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
+	//store directory path...
+	if ((l->path = (char *)calloc(strlen(path+1),1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->path,path);
 	//populate level...
 	if (_mcmap_level_world_read(on,&(l->overworld),mode,rem) == -1)
 		return NULL;
@@ -1546,5 +1686,7 @@ void mcmap_level_free(struct mcmap_level *l)
 	_mcmap_level_world_free(&(l->end));
 	if (l->meta != NULL)
 		nbt_free(l->meta);
+	if (l->path != NULL)
+		free(l->path);
 	return;
 	}

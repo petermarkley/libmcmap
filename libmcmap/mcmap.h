@@ -374,13 +374,13 @@ struct mcmap_chunk
 	struct nbt_tag *raw; //optionally retain stage-4 NBT structure
 	};
 
+//update height map based on geometry
+void mcmap_chunk_height_update(struct mcmap_chunk *);
+
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
 struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode, int rem);
-
-//update height map based on geometry (unnecessary before calling 'mcmap_chunk_write()'; will be called anyway)
-void mcmap_chunk_height_update(struct mcmap_chunk *);
 
 //save all existing components of the given chunk to the given coords in the given region;
 //'rem' is a boolean flag for whether to remember the raw NBT structure on return; return 0 on success and -1 on failure
@@ -408,6 +408,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	{
 	struct mcmap_level_world overworld, nether, end; //worlds in the level
 	struct nbt_tag *meta; //interpreted 'level.dat' file
+	char *path; //path to minecraft map folder
 	};
 //'overworld.regions[0][0].chunks[0][0]->geom->blocks[64][0][0]' selects a block
 //from the first chunk in region (overworld.start_x,overworld.start_z).
@@ -430,10 +431,10 @@ struct mcmap_level //this is the big daddy that should contain everything
 	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *, int x, int z);
 
-//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when
-//available in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when available,
+//in the given region folder, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *);
+int mcmap_light_update(struct mcmap_level_world *, const char *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
