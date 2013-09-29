@@ -39,6 +39,149 @@
 #include "libnbt/nbt.h"
 #include "cswap.h"
 
+//return level of light emitted by the given block type < http://minecraft.gamepedia.com/Light#Light-emitting_blocks >
+uint8_t _mcmap_light_update_emit(mcmap_blockid i)
+	{
+	switch (i)
+		{
+		case MCMAP_BEACON:
+		case MCMAP_END_PORTAL:
+		case MCMAP_FIRE:
+		case MCMAP_GLOWSTONE:
+		case MCMAP_JACK_O_LANTERN:
+		case MCMAP_FLOWING_LAVA:
+		case MCMAP_LAVA:
+		case MCMAP_LOCKED_CHEST:
+		case MCMAP_LIT_REDSTONE_LAMP:
+			return 0x0f; //light level 15
+			break;
+		case MCMAP_TORCH:
+			return 0x0e; //light level 14
+			break;
+		case MCMAP_LIT_FURNACE:
+			return 0x0d; //light level 13
+			break;
+		case MCMAP_NETHER_PORTAL:
+			return 0x0b; //light level 12
+			break;
+		case MCMAP_GLOWING_REDSTONE_ORE:
+		case MCMAP_LIT_REDSTONE_REPEATER:
+		case MCMAP_LIT_REDSTONE_COMPARATOR:
+			return 0x09; //light level 9
+			break;
+		case MCMAP_ENDER_CHEST:
+		case MCMAP_LIT_REDSTONE_TORCH:
+			return 0x07; //light level 7
+			break;
+		case MCMAP_BREWING_STAND:
+		case MCMAP_BROWN_MUSHROOM:
+		case MCMAP_DRAGON_EGG:
+		case MCMAP_END_PORTAL_FRAME:
+			return 0x01; //light level 1
+			break;
+		default: return 0x00; break;
+		}
+	return 0x00;
+	}
+
+//return amount of extinction applied by the given block type < http://minecraft.gamepedia.com/Opacity >
+uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
+	{
+	switch (i)
+		{
+		case MCMAP_AIR:
+		case MCMAP_GLASS:
+		case MCMAP_GLASS_PANE:
+		case MCMAP_CARPET:
+		case MCMAP_LEAVES:
+		case MCMAP_PISTON:
+		case MCMAP_STICKY_PISTON:
+		case MCMAP_PISTON_EXT:
+		case MCMAP_GLOWSTONE:
+		case MCMAP_SPAWNER:
+		case MCMAP_CAULDRON:
+		case MCMAP_LADDER:
+		case MCMAP_FENCE:
+		case MCMAP_GATE:
+		case MCMAP_NETHER_BRICK_FENCE:
+		case MCMAP_COBBLESTONE_WALL:
+		case MCMAP_IRON_BARS:
+		case MCMAP_PLACED_CAKE:
+		case MCMAP_BED:
+		case MCMAP_WOOD_DOOR:
+		case MCMAP_IRON_DOOR:
+		case MCMAP_TRAPDOOR:
+		case MCMAP_UNLIT_REDSTONE_REPEATER:
+		case MCMAP_LIT_REDSTONE_REPEATER:
+		case MCMAP_UNLIT_REDSTONE_COMPARATOR:
+		case MCMAP_LIT_REDSTONE_COMPARATOR:
+		case MCMAP_CHEST:
+		case MCMAP_LOCKED_CHEST:
+		case MCMAP_ENDER_CHEST:
+		case MCMAP_TRAPPED_CHEST:
+		case MCMAP_ENCHANTING_TABLE:
+		case MCMAP_ANVIL:
+		case MCMAP_BREWING_STAND:
+		case MCMAP_END_PORTAL_FRAME:
+		case MCMAP_HOPPER:
+		case MCMAP_DAYLIGHT_SENSOR:
+		case MCMAP_SNOW:
+		case MCMAP_LILY_PAD:
+		case MCMAP_DRAGON_EGG:
+		case MCMAP_RAIL:
+		case MCMAP_POWERED_RAIL:
+		case MCMAP_DETECTOR_RAIL:
+		case MCMAP_ACTIVATOR_RAIL:
+		case MCMAP_LEVER:
+		case MCMAP_STONE_PRESSURE_PLATE:
+		case MCMAP_WOOD_PRESSURE_PLATE:
+		case MCMAP_LIGHT_PRESSURE_PLATE:
+		case MCMAP_HEAVY_PRESSURE_PLATE:
+		case MCMAP_STONE_BUTTON:
+		case MCMAP_WOOD_BUTTON:
+		case MCMAP_TRIPWIRE_HOOK:
+		case MCMAP_TRIPWIRE:
+		case MCMAP_REDSTONE_WIRE:
+		case MCMAP_UNLIT_REDSTONE_TORCH:
+		case MCMAP_LIT_REDSTONE_TORCH:
+		case MCMAP_COBWEB:
+		case MCMAP_TORCH:
+		case MCMAP_SIGN:
+		case MCMAP_WALL_SIGN:
+		case MCMAP_FIRE:
+		case MCMAP_NETHER_PORTAL:
+		case MCMAP_END_PORTAL:
+		case MCMAP_CACTUS:
+		case MCMAP_SUGAR_CANE:
+		case MCMAP_WHEAT:
+		case MCMAP_CARROTS:
+		case MCMAP_POTATOES:
+		case MCMAP_NETHER_WART:
+		case MCMAP_DANDELION:
+		case MCMAP_ROSE:
+		case MCMAP_BROWN_MUSHROOM:
+		case MCMAP_RED_MUSHROOM:
+		case MCMAP_SAPLING:
+		case MCMAP_TALL_GRASS:
+		case MCMAP_DEAD_BUSH:
+		case MCMAP_PUMPKIN_STEM:
+		case MCMAP_MELON_STEM:
+		case MCMAP_VINES:
+		case MCMAP_COCOA_POD:
+		case MCMAP_FLOWER_POT:
+		case MCMAP_HEAD:
+			return 0x01;
+			break;
+		case MCMAP_FLOWING_WATER:
+		case MCMAP_WATER:
+		case MCMAP_ICE:
+			return 0x03;
+			break;
+		default: return 0x0f; break;
+		}
+	return 0x0f;
+	}
+
 //assign 'mcmap_region_chunk' pointers, of the chunk at the given coordinates, to the proper places in the memory buffer - assuming correct values everywhere else
 void _mcmap_region_chunk_refresh(struct mcmap_region *r, int x, int z)
 	{
@@ -251,21 +394,6 @@ void mcmap_region_free(struct mcmap_region *r)
 	return;
 	}
 
-//return 1 if light passes through the given block totally unaltered, otherwise 0
-int _mcmap_chunk_height_update_test(mcmap_blockid i)
-	{
-	switch (i)
-		{
-		case MCMAP_AIR:
-		case MCMAP_GLASS:
-		case MCMAP_GLASS_PANE:
-			return 1;
-			break;
-		default: return 0; break;
-		}
-	return 0;
-	}
-
 //update height map based on geometry
 void mcmap_chunk_height_update(struct mcmap_chunk *c)
 	{
@@ -276,7 +404,7 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 			{
 			for (x=0;x<16;x++)
 				{
-				for (y=256; y>0 && _mcmap_chunk_height_update_test(c->geom->blocks[y-1][z][x]); y--);
+				for (y=256; y>0 && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES && _mcmap_light_update_extinct(c->geom->blocks[y-1][z][x]) == 0x01; y--);
 				c->light->height[z][x] = y;
 				}
 			}
@@ -1304,51 +1432,6 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
 		return w->regions[rz][rx]->chunks[cz][cx];
 		}
-
-//return level of light emitted by the given block type < http://minecraft.gamepedia.com/Light#Light-emitting_blocks >
-uint8_t _mcmap_light_update_emit(mcmap_blockid i)
-	{
-	switch (i)
-		{
-		case MCMAP_BEACON:
-		case MCMAP_END_PORTAL:
-		case MCMAP_FIRE:
-		case MCMAP_GLOWSTONE:
-		case MCMAP_JACK_O_LANTERN:
-		case MCMAP_FLOWING_LAVA:
-		case MCMAP_LAVA:
-		case MCMAP_LOCKED_CHEST:
-		case MCMAP_LIT_REDSTONE_LAMP:
-			return 0x0f; //light level 15
-			break;
-		case MCMAP_TORCH:
-			return 0x0e; //light level 14
-			break;
-		case MCMAP_LIT_FURNACE:
-			return 0x0d; //light level 13
-			break;
-		case MCMAP_NETHER_PORTAL:
-			return 0x0b; //light level 12
-			break;
-		case MCMAP_GLOWING_REDSTONE_ORE:
-		case MCMAP_LIT_REDSTONE_REPEATER:
-		case MCMAP_LIT_REDSTONE_COMPARATOR:
-			return 0x09; //light level 9
-			break;
-		case MCMAP_ENDER_CHEST:
-		case MCMAP_LIT_REDSTONE_TORCH:
-			return 0x07; //light level 7
-			break;
-		case MCMAP_BREWING_STAND:
-		case MCMAP_BROWN_MUSHROOM:
-		case MCMAP_DRAGON_EGG:
-		case MCMAP_END_PORTAL_FRAME:
-			return 0x01; //light level 1
-			break;
-		default: return 0x00; break;
-		}
-	return 0x00;
-	}
 
 //perform lighting update on all loaded geometry in the given world, loading adjacent chunks when available,
 //in the given region folder, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
