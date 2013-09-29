@@ -1340,10 +1340,10 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 //these are convenience functions; application programmer may bypass if he knows what he's doing
 //----------------------------------------------------------------------------------------------
 	//retrieve data from the given world coordinates
-	#define _mcmap_get_resolve(w,component,x,z,default) \
+	#define _mcmap_get_resolve(w,component,x,y,z,default) \
 		{ \
 		int rx,rz, cx,cz, bx,bz; \
-		if ((w) == NULL) \
+		if ((w) == NULL || y<0 || y>256) \
 			return (default); \
 		rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
 		rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
@@ -1360,28 +1360,28 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		return w->regions[rz][rx]->chunks[cz][cx]->component[bz][bx]; \
 		}
 	uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,geom->blocks[y],x,z,MCMAP_AIR);}
+		{_mcmap_get_resolve(w,geom->blocks[y],x,y,z,MCMAP_AIR);}
 	
 	uint8_t mcmap_get_data(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,geom->data[y],x,z,0x00);}
+		{_mcmap_get_resolve(w,geom->data[y],x,y,z,0x00);}
 	
 	int8_t mcmap_get_biome(struct mcmap_level_world *w, int x, int z)
-		{_mcmap_get_resolve(w,geom->biomes,x,z,MCMAP_NOBIOME);}
+		{_mcmap_get_resolve(w,geom->biomes,x,0,z,MCMAP_NOBIOME);}
 	
 	uint8_t mcmap_get_blocklight(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,light->block[y],x,z,0x00);}
+		{_mcmap_get_resolve(w,light->block[y],x,y,z,0x00);}
 	
 	uint8_t mcmap_get_skylight(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,light->sky[y],x,z,0x00);}
+		{_mcmap_get_resolve(w,light->sky[y],x,y,z,0x00);}
 	
 	int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
-		{_mcmap_get_resolve(w,light->height,x,z,-1);}
+		{_mcmap_get_resolve(w,light->height,x,0,z,-1);}
 	
 	//edit data at the given world coordinates; return -1 if region or chunk are missing or not loaded, otherwise return 0
-	#define _mcmap_set_resolve(w,component,x,z,value) \
+	#define _mcmap_set_resolve(w,component,x,y,z,value) \
 		{ \
 		int rx,rz, cx,cz, bx,bz; \
-		if ((w) == NULL) \
+		if ((w) == NULL || y<0 || y>256) \
 			return -1; \
 		rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
 		rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
@@ -1399,22 +1399,22 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		return 0; \
 		}
 	int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
-		{_mcmap_set_resolve(w,geom->blocks[y],x,z,val);}
+		{_mcmap_set_resolve(w,geom->blocks[y],x,y,z,val);}
 	
 	int mcmap_set_data(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,geom->data[y],x,z,val);}
+		{_mcmap_set_resolve(w,geom->data[y],x,y,z,val);}
 	
 	int mcmap_set_biome(struct mcmap_level_world *w, int x, int z, int8_t val)
-		{_mcmap_set_resolve(w,geom->biomes,x,z,val);}
+		{_mcmap_set_resolve(w,geom->biomes,x,0,z,val);}
 	
 	int mcmap_set_blocklight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,light->block[y],x,z,val);}
+		{_mcmap_set_resolve(w,light->block[y],x,y,z,val);}
 	
 	int mcmap_set_skylight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,light->sky[y],x,z,val);}
+		{_mcmap_set_resolve(w,light->sky[y],x,y,z,val);}
 	
 	int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
-		{_mcmap_set_resolve(w,light->height,x,z,val);}
+		{_mcmap_set_resolve(w,light->height,x,0,z,val);}
 	
 	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
@@ -1440,7 +1440,7 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 	{
 	int **loaded;
 	int x,y,z, lx,lz, rx,rz;
-	int light;
+	int light, temp;
 	struct mcmap_chunk *c;
 	
 	//allocate private metadata
@@ -1539,9 +1539,85 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 		}
 	
 	//3rd pass: propagate light
-	for (light=15; light>=0; light--)
+	for (light=15; light>0; light--) //for each light level starting at highest moving down
 		{
-		//FIXME - loop through entire world
+		for (lz=0; lz < w->size_z*32; lz++) //for each chunk
+			{
+			for (lx=0; lx < w->size_x*32; lx++)
+				{
+				if ((c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL) //if the chunk exists
+					{
+					for (y=0;y<256;y++) //for each block in the chunk
+						{
+						for (z=0;z<16;z++)
+							{
+							for (x=0;x<16;x++)
+								{
+								//get our global bearings
+								rx = x+lx*16+w->start_x*512;
+								rz = z+lz*16+w->start_z*512;
+								//propagate block-emitted light
+								if (c->light->block[y][z][x] == (uint8_t)light) //if the light at this block is our current pass
+									{
+									//examine northward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y,rz-1))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx,y,rz-1))) //only change for the brighter
+										mcmap_set_blocklight(w,rx,y,rz-1,(uint8_t)temp);
+									//examine eastward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx+1,y,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx+1,y,rz))) //only change for the brighter
+										mcmap_set_blocklight(w,rx+1,y,rz,(uint8_t)temp);
+									//examine southward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y,rz+1))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx,y,rz+1))) //only change for the brighter
+										mcmap_set_blocklight(w,rx,y,rz+1,(uint8_t)temp);
+									//examine westward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx-1,y,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx-1,y,rz))) //only change for the brighter
+										mcmap_set_blocklight(w,rx-1,y,rz,(uint8_t)temp);
+									//examine upward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y+1,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx,y+1,rz))) //only change for the brighter
+										mcmap_set_blocklight(w,rx,y+1,rz,(uint8_t)temp);
+									//examine downward block
+									temp = ((int)c->light->block[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y-1,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_blocklight(w,rx,y-1,rz))) //only change for the brighter
+										mcmap_set_blocklight(w,rx,y-1,rz,(uint8_t)temp);
+									}
+								//propagate sky-emitted light
+								if (c->light->sky[y][z][x] == (uint8_t)light) //if the light at this block is our current pass
+									{
+									//examine northward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y,rz-1))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx,y,rz-1))) //only change for the brighter
+										mcmap_set_skylight(w,rx,y,rz-1,(uint8_t)temp);
+									//examine eastward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx+1,y,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx+1,y,rz))) //only change for the brighter
+										mcmap_set_skylight(w,rx+1,y,rz,(uint8_t)temp);
+									//examine southward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y,rz+1))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx,y,rz+1))) //only change for the brighter
+										mcmap_set_skylight(w,rx,y,rz+1,(uint8_t)temp);
+									//examine westward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx-1,y,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx-1,y,rz))) //only change for the brighter
+										mcmap_set_skylight(w,rx-1,y,rz,(uint8_t)temp);
+									//examine upward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y+1,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx,y+1,rz))) //only change for the brighter
+										mcmap_set_skylight(w,rx,y+1,rz,(uint8_t)temp);
+									//examine downward block
+									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y-1,rz))); //what would the propagated light level be?
+									if (temp>((int)mcmap_get_skylight(w,rx,y-1,rz))) //only change for the brighter
+										mcmap_set_skylight(w,rx,y-1,rz,(uint8_t)temp);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	
 	//clean up

@@ -4,6 +4,7 @@
 #include "./libnbt/nbt.h"
 
 #define INP_MAP "./test_map/saves/New World/"
+#define MAX_STR 1024
 
 int main(int argc, char **argv)
 	{
@@ -13,6 +14,7 @@ int main(int argc, char **argv)
 	struct mcmap_chunk *c;
 	struct nbt_tag *p;
 	int x,z;
+	char dir[MAX_STR];
 	cz = 0; cx = 0;
 	
 	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_FULL,1)) == NULL)
@@ -23,30 +25,44 @@ int main(int argc, char **argv)
 	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw;
 	c = mcmap_get_chunk(&(l->overworld),0,0);
 	
-	p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
-	fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);
-	nbt_print_ascii(stdout,l->meta,-1,32);
-	fprintf(stdout,"\n");
-	fprintf(stdout,"NBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
+	//p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
+	//fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);
+	//nbt_print_ascii(stdout,l->meta,-1,32);
+	//fprintf(stdout,"\n");
+	//fprintf(stdout,"NBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
 	//nbt_print_ascii(stdout,c->raw,3,8);
 	//fprintf(stdout,"\n");
 	
-	fprintf(stdout,"HeightMap:\n");
-	for (z=0;z<4;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02d ",c->light->height[z][x]);
-		fprintf(stdout,"\n");
-		}
 	fprintf(stdout,"SkyLight:\n");
-	for (z=0;z<4;z++)
+	for (z=0;z<16;z++)
 		{
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
 		fprintf(stdout,"\n");
 		}
-	fprintf(stdout,"BlockLight:\n");
+	
+	mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
+	
+	snprintf(dir,MAX_STR,"%sregion/",INP_MAP);
+	fprintf(stdout,"Performing lighting update . . .\n");
+	mcmap_light_update(&(l->overworld),dir);
+	
+	/*fprintf(stdout,"HeightMap:\n");
+	for (z=0;z<4;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02d ",c->light->height[z][x]);
+		fprintf(stdout,"\n");
+		}*/
+	fprintf(stdout,"SkyLight:\n");
 	for (z=0;z<16;z++)
+		{
+		for (x=0;x<16;x++)
+			fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
+		fprintf(stdout,"\n");
+		}/*
+	fprintf(stdout,"BlockLight:\n");
+	for (z=0;z<4;z++)
 		{
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02x ",c->light->block[64][z][x]);
@@ -65,7 +81,7 @@ int main(int argc, char **argv)
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
 		fprintf(stdout,"\n");
-		}
+		}*/
 	
 	mcmap_level_free(l);
 	return 0;
