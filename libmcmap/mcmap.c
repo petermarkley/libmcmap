@@ -1504,7 +1504,7 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz-1][lx] = 2;
 					}
-				if (lx < w->size_x-1 && loaded[lz][lx+1] == 0) //load eastward chunk
+				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //load eastward chunk
 					{
 					rx=(lx+1)/32; rz=lz/32;
 					 x=(lx+1)%32;  z=lz%32;
@@ -1514,7 +1514,7 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz][lx+1] = 2;
 					}
-				if (lz < w->size_z-1 && loaded[lz+1][lx] == 0) //load southward chunk
+				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //load southward chunk
 					{
 					rx=lx/32; rz=(lz+1)/32;
 					 x=lx%32;  z=(lz+1)%32;
@@ -1538,7 +1538,43 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 			}
 		}
 	
-	//3rd pass: propagate light
+	//3rd pass: specially prepare the adjacent chunks
+	for (lz=0; lz < w->size_z*32; lz++)
+		{
+		for (lx=0; lx < w->size_x*32; lx++)
+			{
+			if (loaded[lz][lx] == 2 && (c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL)
+				{
+				mcmap_chunk_height_update(c); //update the heightmap
+				//alter parameters of loop based on surrounding chunks, to preserve a single line of block light potentially emitted from unloaded chunks
+				rx=16; rz=16; x=0; z=0;
+				if (lz > 0 && loaded[lz-1][lx] == 0) //northward chunk is unloaded
+					z++;
+				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //eastward chunk
+					rx--;
+				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //southward chunk
+					rz--;
+				if (lx > 0 && loaded[lz][lx-1] == 0) //westward chunk
+					x++;
+				for (y=0;y<256;y++) //remove all light except emitting blocks
+					{
+					for (;z<rz;z++)
+						{
+						for (;x<rx;x++)
+							{
+							c->light->block[y][z][x] = _mcmap_light_update_emit(c->geom->blocks[y][z][x]);
+							if (y >= c->light->height[z][x])
+								c->light->sky[y][z][x] = 0x0f;
+							else
+								c->light->sky[y][z][x] = 0x00;
+							}
+						}
+					}
+				}
+			}
+		}
+	
+	//4th pass: propagate light
 	for (light=15; light>0; light--) //for each light level starting at highest moving down
 		{
 		for (lz=0; lz < w->size_z*32; lz++) //for each chunk
