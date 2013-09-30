@@ -969,6 +969,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 				return -1;
 				}
+			mcmap_chunk_height_update(c);
 			}
 		else
 			{
@@ -1433,15 +1434,23 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		return w->regions[rz][rx]->chunks[cz][cx];
 		}
 
-//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when available,
-//in the given region folder, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//perform lighting update on all loaded geometry in the given world of the given level, loading adjacent chunks
+//when available, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *w, const char *path)
+int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 	{
 	int **loaded;
 	int x,y,z, lx,lz, rx,rz;
-	int light, temp;
+	int light, temp, i;
 	struct mcmap_chunk *c;
+	char path[MCMAP_MAXSTR];
+	
+	//resolve full path from level and world components
+	for (i=0;l->path[i]!='\0';i++);
+	if (l->path[i-1] == '/')
+		snprintf(path,MCMAP_MAXSTR,"%s%s",l->path,w->path);
+	else
+		snprintf(path,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
 	
 	//allocate private metadata
 	if ((loaded = (int **)calloc(w->size_z*32,sizeof(int *))) == NULL)
@@ -1705,20 +1714,27 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
-int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap_readmode mode, int rem)
+int _mcmap_level_world_read(const char *lpath, const char *path, struct mcmap_level_world *w, mcmap_readmode mode, int rem)
 	{
 	DIR *d;
 	struct dirent *e;
 	int minx,minz,maxx,maxz;
 	int x,z, ix,iz, lx,lz;
-	int first;
+	int first, i;
+	char fpath[MCMAP_MAXSTR];
 	w->size_x = 0;
 	w->size_z = 0;
 	
+	//resolve full path from level and world components
+	for (i=0;lpath[i]!='\0';i++);
+	if (lpath[i-1] == '/')
+		snprintf(fpath,MCMAP_MAXSTR,"%s%s",lpath,path);
+	else
+		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",lpath,path);
 	//open directory stream
-	if ((d = opendir(path)) == NULL)
+	if ((d = opendir(fpath)) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"opendir(\"%s\") returned NULL",path);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"opendir(\"%s\") returned NULL",fpath);
 		return -1;
 		}
 	//scan directory to determine the world limits
@@ -1757,6 +1773,14 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return -1;
 		}
+	//store relative world path
+	if ((w->path = (char *)calloc(strlen(path+1),1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return -1;
+		}
+	strcpy(w->path,path);
+	//allocate regions
 	for (z=0; z < w->size_z; z++)
 		{
 		if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
@@ -1785,7 +1809,7 @@ int _mcmap_level_world_read(const char *path, struct mcmap_level_world *w, mcmap
 				ix = x - w->start_x;
 				iz = z - w->start_z;
 				//read region
-				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,path)) != NULL)
+				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,fpath)) != NULL)
 					{
 					//read chunks
 					for (lz=0;lz<16;lz++)
@@ -1835,21 +1859,14 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int 
 		return NULL;
 	
 	//resolve items from map directory...
+	snprintf(on,MCMAP_MAXSTR,"region/");
+	snprintf(nn,MCMAP_MAXSTR,"DIM-1/");
+	snprintf(en,MCMAP_MAXSTR,"DIM1/");
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		{
-		snprintf(on,MCMAP_MAXSTR,"%sregion/",path);
-		snprintf(nn,MCMAP_MAXSTR,"%sDIM-1/",path);
-		snprintf(en,MCMAP_MAXSTR,"%sDIM1/",path);
 		snprintf(ln,MCMAP_MAXSTR,"%slevel.dat",path);
-		}
 	else
-		{
-		snprintf(on,MCMAP_MAXSTR,"%s/regions/",path);
-		snprintf(nn,MCMAP_MAXSTR,"%s/DIM-1/",path);
-		snprintf(en,MCMAP_MAXSTR,"%s/DIM1/",path);
 		snprintf(ln,MCMAP_MAXSTR,"%s/level.dat",path);
-		}
 	//allocate level...
 	if ((l = (struct mcmap_level *)calloc(1,sizeof(struct mcmap_level))) == NULL)
 		{
@@ -1864,11 +1881,11 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int 
 		}
 	strcpy(l->path,path);
 	//populate level...
-	if (_mcmap_level_world_read(on,&(l->overworld),mode,rem) == -1)
+	if (_mcmap_level_world_read(path,on,&(l->overworld),mode,rem) == -1)
 		return NULL;
-	if (_mcmap_level_world_read(nn,&(l->nether),mode,rem) == -1)
+	if (_mcmap_level_world_read(path,nn,&(l->nether),mode,rem) == -1)
 		return NULL;
-	if (_mcmap_level_world_read(en,&(l->end),mode,rem) == -1)
+	if (_mcmap_level_world_read(path,en,&(l->end),mode,rem) == -1)
 		return NULL;
 	//read 'level.dat' file...
 	if ((l->meta = nbt_file_read(ln)) == NULL)
@@ -1908,6 +1925,7 @@ void _mcmap_level_world_free(struct mcmap_level_world *w)
 		free(w->regions[z]);
 		}
 	free(w->regions);
+	free(w->path);
 	return;
 	}
 
@@ -1923,5 +1941,6 @@ void mcmap_level_free(struct mcmap_level *l)
 		nbt_free(l->meta);
 	if (l->path != NULL)
 		free(l->path);
+	free(l);
 	return;
 	}

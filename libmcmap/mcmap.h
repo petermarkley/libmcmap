@@ -403,6 +403,7 @@ struct mcmap_level_world
 	struct mcmap_level_region ***regions; //dynamically-sized 2D array, because a world can be any size
 	int start_x, start_z; //index (0,0) in a region array should correspond to the northwesternmost corner of the generated map, recorded here
 	int size_x, size_z; //size of the region array
+	char *path; //path to region folder relative to level folder
 	};
 struct mcmap_level //this is the big daddy that should contain everything
 	{
@@ -410,7 +411,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	struct nbt_tag *meta; //interpreted 'level.dat' file
 	char *path; //path to minecraft map folder
 	};
-//'overworld.regions[0][0].chunks[0][0]->geom->blocks[64][0][0]' selects a block
+//'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block
 //from the first chunk in region (overworld.start_x,overworld.start_z).
 
 //these are convenience functions; application programmer may bypass if he knows what he's doing
@@ -431,10 +432,10 @@ struct mcmap_level //this is the big daddy that should contain everything
 	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *, int x, int z);
 
-//perform lighting update on all loaded geometry in the given world, loading adjacent chunks when available,
-//in the given region folder, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
+//perform lighting update on all loaded geometry in the given world of the given level, loading adjacent chunks
+//when available, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *, const char *);
+int mcmap_light_update(struct mcmap_level_world *, struct mcmap_level *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with

@@ -10,12 +10,11 @@ int main(int argc, char **argv)
 	{
 	struct mcmap_level *l;
 	struct mcmap_region *r;
-	unsigned int cx,cz;
+	//unsigned int cx,cz;
 	struct mcmap_chunk *c;
-	struct nbt_tag *p;
+	//struct nbt_tag *p;
 	int x,z;
-	char dir[MAX_STR];
-	cz = 0; cx = 0;
+	//cz = 0; cx = 0;
 	
 	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_FULL,1)) == NULL)
 		{
@@ -23,7 +22,11 @@ int main(int argc, char **argv)
 		return -1;
 		}
 	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw;
-	c = mcmap_get_chunk(&(l->overworld),0,0);
+	if ((c = mcmap_get_chunk(&(l->overworld),0,0)) == NULL)
+		{
+		fprintf(stderr,"missing chunk\n");
+		return -1;
+		}
 	
 	//p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
 	//fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);
@@ -41,11 +44,10 @@ int main(int argc, char **argv)
 		fprintf(stdout,"\n");
 		}
 	
-	mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
+	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
 	
-	snprintf(dir,MAX_STR,"%sregion/",INP_MAP);
 	fprintf(stdout,"Performing lighting update . . .\n");
-	mcmap_light_update(&(l->overworld),dir);
+	mcmap_light_update(&(l->overworld),l);
 	
 	/*fprintf(stdout,"HeightMap:\n");
 	for (z=0;z<4;z++)
