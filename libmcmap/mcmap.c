@@ -1534,6 +1534,46 @@ int mcmap_light_update(struct mcmap_level_world *w, const char *path)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz][lx-1] = 2;
 					}
+				if (lz > 0 && loaded[lz-1][lx] == 0) //load northeastward chunk
+					{
+					rx=(lx+1)/32; rz=(lz-1)/32;
+					 x=(lx+1)%32;  z=(lz-1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz-1][lx+1] = 2;
+					}
+				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //load southeastward chunk
+					{
+					rx=(lx+1)/32; rz=(lz+1)/32;
+					 x=(lx+1)%32;  z=(lz+1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz+1][lx+1] = 2;
+					}
+				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //load southwestward chunk
+					{
+					rx=(lx-1)/32; rz=(lz+1)/32;
+					 x=(lx-1)%32;  z=(lz+1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz+1][lx-1] = 2;
+					}
+				if (lx > 0 && loaded[lz][lx-1] == 0) //load northwestward chunk
+					{
+					rx=(lx-1)/32; rz=(lz-1)/32;
+					 x=(lx-1)%32;  z=(lz-1)%32;
+					if (w->regions[rz][rx]->raw == NULL)
+						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+					if (w->regions[rz][rx]->raw != NULL)
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+					loaded[lz-1][lx-1] = 2;
+					}
 				}
 			}
 		}
