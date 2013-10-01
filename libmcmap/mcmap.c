@@ -404,7 +404,7 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 			{
 			for (x=0;x<16;x++)
 				{
-				for (y=256; y>0 && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES && _mcmap_light_update_extinct(c->geom->blocks[y-1][z][x]) == 0x01; y--);
+				for (y=256; y>0 && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES && c->geom->blocks[y-1][z][x] != MCMAP_GLOWSTONE && c->geom->blocks[y-1][z][x] != MCMAP_COBWEB && _mcmap_light_update_extinct(c->geom->blocks[y-1][z][x]) == 0x01; y--);
 				c->light->height[z][x] = y;
 				}
 			}
