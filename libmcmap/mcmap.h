@@ -331,9 +331,9 @@ void mcmap_region_free(struct mcmap_region *);
 //read mode for 'mcmap_chunk_read()' & 'mcmap_level_read()'
 typedef enum
 	{
-	MCMAP_READ_PARTIAL, //load nothing extra, to save memory on simple read operations
-	MCMAP_READ_FULL //load everything possible, for intensive edits (may use LOTS of memory)
-	} mcmap_readmode;
+	MCMAP_PARTIAL, //load nothing extra, to save memory on simple read operations
+	MCMAP_FULL //load everything possible, for intensive edits (may use LOTS of memory)
+	} mcmap_mode;
 
 //geometry
 struct mcmap_chunk_geom
@@ -382,9 +382,9 @@ struct mcmap_chunk
 void mcmap_chunk_height_update(struct mcmap_chunk *);
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
-//'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
+//'mode' should be MCMAP_FULL for fully populated chunk, MCMAP_PARTIAL to save memory
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
-struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_readmode mode, int rem);
+struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *, mcmap_mode mode, int rem);
 
 //save all existing components of the given chunk to the given coords in the given region;
 //'rem' is a boolean flag for whether to remember the raw NBT structure on return; return 0 on success and -1 on failure
@@ -443,11 +443,11 @@ struct mcmap_level //this is the big daddy that should contain everything
 int mcmap_light_update(struct mcmap_level_world *, struct mcmap_level *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
-// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick a certain portion with
-// 'mcmap_area_load()', or MCMAP_READ_FULL to read everything (warning: may consume LOTS of memory);
+// 'mode' should be MCMAP_PARTIAL to let the caller cherry-pick a certain portion with
+// 'mcmap_area_load()', or MCMAP_FULL to read everything (warning: may consume LOTS of memory);
 // 'rem' is a boolean flag for whether to remember the raw data at each stage (for faster resaving);
 // returns NULL on failure
-struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem);
+struct mcmap_level *mcmap_level_read(const char *, mcmap_mode mode, int rem);
 
 //free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
 void mcmap_level_free(struct mcmap_level *);

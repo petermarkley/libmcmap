@@ -413,9 +413,9 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 	}
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
-//'mode' should be MCMAP_READ_FULL for fully populated chunk, MCMAP_READ_PARTIAL to save memory
+//'mode' should be MCMAP_FULL for fully populated chunk, MCMAP_PARTIAL to save memory
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
-struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmode mode, int rem)
+struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode mode, int rem)
 	{
 	nbt_compression_type type;
 	struct mcmap_chunk *c;
@@ -498,7 +498,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 	c->z = p->payload.p_int;
 	
 	//read optional data
-	if (mode == MCMAP_READ_FULL)
+	if (mode == MCMAP_FULL)
 		{
 		//allocate both lighting info struct and special object struct
 		if ((c->light = (struct mcmap_chunk_light *)calloc(1,sizeof(struct mcmap_chunk_light))) == NULL || (c->special = (struct mcmap_chunk_special *)calloc(1,sizeof(struct mcmap_chunk_special))) == NULL)
@@ -604,7 +604,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_readmo
 				}
 			}
 		//optional lighting info
-		if (mode == MCMAP_READ_FULL)
+		if (mode == MCMAP_FULL)
 			{
 			//block-emitted light
 			if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"BlockLight")) == NULL || p->payload.p_byte_array.size != 2048)
@@ -1523,7 +1523,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz-1][lx] = 2;
 					}
 				if (ea) //load eastward chunk
@@ -1533,7 +1533,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz][lx+1] = 2;
 					}
 				if (st) //load southward chunk
@@ -1543,7 +1543,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz+1][lx] = 2;
 					}
 				if (we) //load westward chunk
@@ -1553,7 +1553,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz][lx-1] = 2;
 					}
 				if (nr && ea) //load northeastward chunk
@@ -1563,7 +1563,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz-1][lx+1] = 2;
 					}
 				if (st && ea) //load southeastward chunk
@@ -1573,7 +1573,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz+1][lx+1] = 2;
 					}
 				if (st && we) //load southwestward chunk
@@ -1583,7 +1583,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz+1][lx-1] = 2;
 					}
 				if (nr && we) //load northwestward chunk
@@ -1593,7 +1593,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 					if (w->regions[rz][rx]->raw == NULL)
 						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
-						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
+						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_FULL,1);
 					loaded[lz-1][lx-1] = 2;
 					}
 				}
@@ -1727,7 +1727,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
-int _mcmap_level_world_read(const char *lpath, const char *path, struct mcmap_level_world *w, mcmap_readmode mode, int rem)
+int _mcmap_level_world_read(const char *lpath, const char *path, struct mcmap_level_world *w, mcmap_mode mode, int rem)
 	{
 	DIR *d;
 	struct dirent *e;
@@ -1812,7 +1812,7 @@ int _mcmap_level_world_read(const char *lpath, const char *path, struct mcmap_le
 		}
 	
 	//populate world
-	if (mode == MCMAP_READ_FULL)
+	if (mode == MCMAP_FULL)
 		{
 		rewinddir(d);
 		while ((e = readdir(d)) != NULL)
@@ -1856,11 +1856,11 @@ int _mcmap_level_world_read(const char *lpath, const char *path, struct mcmap_le
 	}
 
 //creates and returns a level struct by reading the minecraft map at the given path;
-// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
-// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
+// 'mode' should be MCMAP_PARTIAL to let the caller cherry-pick regions and chunks with
+// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_FULL to read everything
 // (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
 // the raw data at each stage; returns NULL on failure
-struct mcmap_level *mcmap_level_read(const char *path, mcmap_readmode mode, int rem)
+struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	{
 	struct mcmap_level *l;
 	char on[MCMAP_MAXSTR];

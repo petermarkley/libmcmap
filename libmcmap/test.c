@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	cx = 0; cz = 0;
 	rx = 0; rz = 0;
 	
-	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_PARTIAL,1)) == NULL)
+	if ((l = mcmap_level_read(INP_MAP,MCMAP_PARTIAL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 		return -1;
 		}
 	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
