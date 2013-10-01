@@ -10,31 +10,36 @@ int main(int argc, char **argv)
 	{
 	struct mcmap_level *l;
 	struct mcmap_region *r;
-	//unsigned int cx,cz;
+	unsigned int cx,cz, rx,rz;
 	struct mcmap_chunk *c;
 	//struct nbt_tag *p;
 	int x,z;
-	char dir[MAX_STR];
-	//cz = 0; cx = 0;
+	//char dir[MAX_STR];
+	cx = 0; cz = 0;
+	rx = 0; rz = 0;
 	
-	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_PARTIAL,1)) == NULL)
+	if ((l = mcmap_level_read(INP_MAP,MCMAP_READ_FULL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	snprintf(dir,MAX_STR,"%s%s",INP_MAP,l->overworld.path);
-	if ((l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw = mcmap_region_read(0,0,dir)) == NULL)
+	
+	/*snprintf(dir,MAX_STR,"%s%s",INP_MAP,l->overworld.path);
+	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	r = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->raw;
-	if ((l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->chunks[0][0] = mcmap_chunk_read(&(r->chunks[0][0]),MCMAP_READ_FULL,1)) == NULL)
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_READ_FULL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	c = l->overworld.regions[0-l->overworld.start_z][0-l->overworld.start_x]->chunks[0][0];
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;*/
+	
+	r = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw;
+	c = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx];
 	
 	//p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
 	//fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);

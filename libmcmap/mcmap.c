@@ -1440,8 +1440,9 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 	{
 	int **loaded;
-	int x,y,z, lx,lz, rx,rz;
+	int x,y,z, lx,lz, rx,rz, bx,bz;
 	int light, temp, i;
+	int nr,st,ea,we;
 	struct mcmap_chunk *c;
 	char path[MCMAP_MAXSTR];
 	
@@ -1472,7 +1473,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 		{
 		for (lx=0; lx < w->size_x*32; lx++)
 			{
-			if ((c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL)
+			if ((c = mcmap_get_chunk(w,lx*16+w->start_x*512,lz*16+w->start_z*512)) != NULL)
 				{
 				loaded[lz][lx] = 1; //remember which chunks are loaded
 				mcmap_chunk_height_update(c); //update the heightmap
@@ -1503,82 +1504,86 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 			{
 			if (loaded[lz][lx] == 1)
 				{
-				if (lz > 0 && loaded[lz-1][lx] == 0) //load northward chunk
+				nr = (lz > 0 && loaded[lz-1][lx] == 0);
+				st = (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0);
+				ea = (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0);
+				we = (lx > 0 && loaded[lz][lx-1] == 0);
+				if (nr) //load northward chunk
 					{
 					rx=lx/32; rz=(lz-1)/32;
 					 x=lx%32;  z=(lz-1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz-1][lx] = 2;
 					}
-				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //load eastward chunk
+				if (ea) //load eastward chunk
 					{
 					rx=(lx+1)/32; rz=lz/32;
 					 x=(lx+1)%32;  z=lz%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz][lx+1] = 2;
 					}
-				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //load southward chunk
+				if (st) //load southward chunk
 					{
 					rx=lx/32; rz=(lz+1)/32;
 					 x=lx%32;  z=(lz+1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz+1][lx] = 2;
 					}
-				if (lx > 0 && loaded[lz][lx-1] == 0) //load westward chunk
+				if (we) //load westward chunk
 					{
 					rx=(lx-1)/32; rz=lz/32;
 					 x=(lx-1)%32;  z=lz%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz][lx-1] = 2;
 					}
-				if (lz > 0 && loaded[lz-1][lx] == 0) //load northeastward chunk
+				if (nr && ea) //load northeastward chunk
 					{
 					rx=(lx+1)/32; rz=(lz-1)/32;
 					 x=(lx+1)%32;  z=(lz-1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz-1][lx+1] = 2;
 					}
-				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //load southeastward chunk
+				if (st && ea) //load southeastward chunk
 					{
 					rx=(lx+1)/32; rz=(lz+1)/32;
 					 x=(lx+1)%32;  z=(lz+1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz+1][lx+1] = 2;
 					}
-				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //load southwestward chunk
+				if (st && we) //load southwestward chunk
 					{
 					rx=(lx-1)/32; rz=(lz+1)/32;
 					 x=(lx-1)%32;  z=(lz+1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz+1][lx-1] = 2;
 					}
-				if (lx > 0 && loaded[lz][lx-1] == 0) //load northwestward chunk
+				if (nr && we) //load northwestward chunk
 					{
 					rx=(lx-1)/32; rz=(lz-1)/32;
 					 x=(lx-1)%32;  z=(lz-1)%32;
 					if (w->regions[rz][rx]->raw == NULL)
-						w->regions[rz][rx]->raw = mcmap_region_read(rz + w->start_z, rx + w->start_x, path);
+						w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, path);
 					if (w->regions[rz][rx]->raw != NULL)
 						w->regions[rz][rx]->chunks[z][x] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[z][x]),MCMAP_READ_FULL,1);
 					loaded[lz-1][lx-1] = 2;
@@ -1592,24 +1597,24 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 		{
 		for (lx=0; lx < w->size_x*32; lx++)
 			{
-			if (loaded[lz][lx] == 2 && (c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL)
+			if (loaded[lz][lx] == 2 && (c = mcmap_get_chunk(w,lx*16+w->start_x*512,lz*16+w->start_z*512)) != NULL)
 				{
 				mcmap_chunk_height_update(c); //update the heightmap
 				//alter parameters of loop based on surrounding chunks, to preserve a single line of block light potentially emitted from unloaded chunks
-				rx=16; rz=16; x=0; z=0;
+				rx=16; rz=16; bx=0; bz=0;
 				if (lz > 0 && loaded[lz-1][lx] == 0) //northward chunk is unloaded
-					z++;
+					bz++;
 				if (lx < w->size_x*32-1 && loaded[lz][lx+1] == 0) //eastward chunk
 					rx--;
 				if (lz < w->size_z*32-1 && loaded[lz+1][lx] == 0) //southward chunk
 					rz--;
 				if (lx > 0 && loaded[lz][lx-1] == 0) //westward chunk
-					x++;
+					bx++;
 				for (y=0;y<256;y++) //remove all light except emitting blocks
 					{
-					for (;z<rz;z++)
+					for (z=bz;z<rz;z++)
 						{
-						for (;x<rx;x++)
+						for (x=bx;x<rx;x++)
 							{
 							c->light->block[y][z][x] = _mcmap_light_update_emit(c->geom->blocks[y][z][x]);
 							if (y >= c->light->height[z][x])
@@ -1630,7 +1635,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 			{
 			for (lx=0; lx < w->size_x*32; lx++)
 				{
-				if ((c = mcmap_get_chunk(w,lx*16,lz*16)) != NULL) //if the chunk exists
+				if ((c = mcmap_get_chunk(w,lx*16+w->start_x*512,lz*16+w->start_x*512)) != NULL) //if the chunk exists
 					{
 					for (y=0;y<256;y++) //for each block in the chunk
 						{
