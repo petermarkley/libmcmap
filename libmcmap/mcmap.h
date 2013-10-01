@@ -419,7 +419,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 //'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block
 //from the first chunk in region (overworld.start_x,overworld.start_z).
 
-//these are convenience functions; application programmer may bypass if he knows what he's doing
+//these functions are for safety & convenience; application programmer may bypass if he knows what he's doing
 	//retrieve data from the given global coordinates
 	uint16_t mcmap_get_block     (struct mcmap_level_world *, int x, int y, int z);
 	uint8_t  mcmap_get_data      (struct mcmap_level_world *, int x, int y, int z);
