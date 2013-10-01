@@ -1341,7 +1341,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 //these are convenience functions; application programmer may bypass if he knows what he's doing
 //----------------------------------------------------------------------------------------------
 	//retrieve data from the given world coordinates
-	#define _mcmap_get_resolve(w,component,x,y,z,default) \
+	#define _mcmap_get_resolve(w,component1,component2,x,y,z,default) \
 		{ \
 		int rx,rz, cx,cz, bx,bz; \
 		if ((w) == NULL || y<0 || y>256) \
@@ -1354,32 +1354,32 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0); \
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL) \
+		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL || (w)->regions[rz][rx]->chunks[cz][cx]->component1 == NULL) \
 			return (default); \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-		return w->regions[rz][rx]->chunks[cz][cx]->component[bz][bx]; \
+		return w->regions[rz][rx]->chunks[cz][cx]->component1->component2[bz][bx]; \
 		}
 	uint16_t mcmap_get_block(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,geom->blocks[y],x,y,z,MCMAP_AIR);}
+		{_mcmap_get_resolve(w,geom,blocks[y],x,y,z,MCMAP_AIR);}
 	
 	uint8_t mcmap_get_data(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,geom->data[y],x,y,z,0x00);}
+		{_mcmap_get_resolve(w,geom,data[y],x,y,z,0x00);}
 	
 	int8_t mcmap_get_biome(struct mcmap_level_world *w, int x, int z)
-		{_mcmap_get_resolve(w,geom->biomes,x,0,z,MCMAP_NOBIOME);}
+		{_mcmap_get_resolve(w,geom,biomes,x,0,z,MCMAP_NOBIOME);}
 	
 	uint8_t mcmap_get_blocklight(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,light->block[y],x,y,z,0x00);}
+		{_mcmap_get_resolve(w,light,block[y],x,y,z,0x00);}
 	
 	uint8_t mcmap_get_skylight(struct mcmap_level_world *w, int x, int y, int z)
-		{_mcmap_get_resolve(w,light->sky[y],x,y,z,0x00);}
+		{_mcmap_get_resolve(w,light,sky[y],x,y,z,0x00);}
 	
 	int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
-		{_mcmap_get_resolve(w,light->height,x,0,z,-1);}
+		{_mcmap_get_resolve(w,light,height,x,0,z,-1);}
 	
 	//edit data at the given world coordinates; return -1 if region or chunk are missing or not loaded, otherwise return 0
-	#define _mcmap_set_resolve(w,component,x,y,z,value) \
+	#define _mcmap_set_resolve(w,component1,component2,x,y,z,value) \
 		{ \
 		int rx,rz, cx,cz, bx,bz; \
 		if ((w) == NULL || y<0 || y>256) \
@@ -1392,30 +1392,30 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0); \
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL) \
+		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL || (w)->regions[rz][rx]->chunks[cz][cx]->component1 == NULL) \
 			return -1; \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
-		w->regions[rz][rx]->chunks[cz][cx]->component[bz][bx] = (value); \
+		w->regions[rz][rx]->chunks[cz][cx]->component1->component2[bz][bx] = (value); \
 		return 0; \
 		}
 	int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
-		{_mcmap_set_resolve(w,geom->blocks[y],x,y,z,val);}
+		{_mcmap_set_resolve(w,geom,blocks[y],x,y,z,val);}
 	
 	int mcmap_set_data(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,geom->data[y],x,y,z,val);}
+		{_mcmap_set_resolve(w,geom,data[y],x,y,z,val);}
 	
 	int mcmap_set_biome(struct mcmap_level_world *w, int x, int z, int8_t val)
-		{_mcmap_set_resolve(w,geom->biomes,x,0,z,val);}
+		{_mcmap_set_resolve(w,geom,biomes,x,0,z,val);}
 	
 	int mcmap_set_blocklight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,light->block[y],x,y,z,val);}
+		{_mcmap_set_resolve(w,light,block[y],x,y,z,val);}
 	
 	int mcmap_set_skylight(struct mcmap_level_world *w, int x, int y, int z, uint8_t val)
-		{_mcmap_set_resolve(w,light->sky[y],x,y,z,val);}
+		{_mcmap_set_resolve(w,light,sky[y],x,y,z,val);}
 	
 	int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
-		{_mcmap_set_resolve(w,light->height,x,0,z,val);}
+		{_mcmap_set_resolve(w,light,height,x,0,z,val);}
 	
 	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
@@ -1476,6 +1476,14 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 			if ((c = mcmap_get_chunk(w,lx*16+w->start_x*512,lz*16+w->start_z*512)) != NULL)
 				{
 				loaded[lz][lx] = 1; //remember which chunks are loaded
+				if (c->light == NULL) //make sure 'light' struct exists
+					{
+					if ((c->light = (struct mcmap_chunk_light *)calloc(1,sizeof(struct mcmap_chunk_light))) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+						return -1;
+						}
+					}
 				mcmap_chunk_height_update(c); //update the heightmap
 				for (y=0;y<256;y++) //remove all light except emitting blocks
 					{
