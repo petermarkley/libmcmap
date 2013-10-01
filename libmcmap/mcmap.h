@@ -40,13 +40,13 @@
 
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
-//-------------------------------------------------------------------------------------
-//recommended API layer is at the bottom of the document, under "level-wide processing"
-//-------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
+// recommended API layer is at the bottom of the document, under "level-wide processing"
+// -------------------------------------------------------------------------------------
 
 
-//general definitions
-//-------------------
+// general definitions
+// -------------------
 
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
 //library does not entirely rely on block definitions being complete
@@ -328,7 +328,7 @@ void mcmap_region_free(struct mcmap_region *);
 // stage 5: native minecraft memory structure
 // ------------------------------------------
 
-//read mode for 'mcmap_chunk_read()' & 'mcmap_level_read()'
+//read mode for 'mcmap_chunk_read()' & 'mcmap_level_read()', etc.
 typedef enum
 	{
 	MCMAP_PARTIAL, //load nothing extra, to save memory on simple read operations
@@ -394,9 +394,9 @@ int mcmap_chunk_write(struct mcmap_region *, int x, int z, struct mcmap_chunk *,
 void mcmap_chunk_free(struct mcmap_chunk *);
 
 
-//level-wide processing
-//---------------------
-//(this is the only recommended API layer)
+// level-wide processing
+// ---------------------
+// (this is the only recommended API layer)
 
 struct mcmap_level_region
 	{
