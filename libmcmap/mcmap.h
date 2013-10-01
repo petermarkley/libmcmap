@@ -40,10 +40,13 @@
 
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
+//-------------------------------------------------------------------------------------
+//recommended API layer is at the bottom of the document, under "level-wide processing"
+//-------------------------------------------------------------------------------------
+
 
 //general definitions
 //-------------------
-//(scroll past for overview documentation)
 
 //minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
 //library does not entirely rely on block definitions being complete
@@ -321,6 +324,7 @@ void mcmap_region_free(struct mcmap_region *);
 
 #define MCMAP_COMPRESSION NBT_COMPRESS_ZLIB
 
+
 // stage 5: native minecraft memory structure
 // ------------------------------------------
 
@@ -392,6 +396,7 @@ void mcmap_chunk_free(struct mcmap_chunk *);
 
 //level-wide processing
 //---------------------
+//(this is the only recommended API layer)
 
 struct mcmap_level_region
 	{
@@ -438,10 +443,10 @@ struct mcmap_level //this is the big daddy that should contain everything
 int mcmap_light_update(struct mcmap_level_world *, struct mcmap_level *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
-// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick regions and chunks with
-// 'mcmap_region_read()' and 'mcmap_chunk_read()', or MCMAP_READ_FULL to read everything
-// (warning: may consume LOTS of memory); 'rem' is a boolean flag for whether to remember
-// the raw data at each stage; returns NULL on failure
+// 'mode' should be MCMAP_READ_PARTIAL to let the caller cherry-pick a certain portion with
+// 'mcmap_area_load()', or MCMAP_READ_FULL to read everything (warning: may consume LOTS of memory);
+// 'rem' is a boolean flag for whether to remember the raw data at each stage (for faster resaving);
+// returns NULL on failure
 struct mcmap_level *mcmap_level_read(const char *, mcmap_readmode mode, int rem);
 
 //free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
