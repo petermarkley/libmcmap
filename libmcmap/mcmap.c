@@ -238,8 +238,26 @@ int _mcmap_region_chunk_check(struct mcmap_region *r, int x, int z)
 	return 0;
 	}
 
+//allocates and initializes a bare minimum region, which can be passed to 'mcmap_chunk_write()'
+struct mcmap_region *mcmap_region_new(void)
+	{
+	struct mcmap_region *r;
+	if ((r = (struct mcmap_region *)calloc(1,sizeof(struct mcmap_region))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	r->size = 2048;
+	if ((r->header = (struct mcmap_region_header *)calloc(r->size,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	return r;
+	}
+
 //searches the given path to a minecraft region folder and parses the region file for the given X & Z region coordinates
-//returns pointer to region memory structure; if error returns NULL
+//returns pointer to region memory structure; returns NULL on failure
 struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	{
 	FILE *r_file;
@@ -412,6 +430,43 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 	return;
 	}
 
+//allocate a chunk and record the given per-region chunk coordinates; 'mode' should be MCMAP_PARTIAL
+//to only create geometry and chunk metadata, MCMAP_FULL to create everything; returns NULL on failure
+struct mcmap_chunk *mcmap_chunk_new(int x, int z, mcmap_mode mode)
+	{
+	struct mcmap_chunk *c;
+	if ((c = (struct mcmap_chunk *)calloc(1,sizeof(struct mcmap_chunk))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	c->x = x; c->z = z;
+	if ((c->geom = (struct mcmap_chunk_geom *)calloc(1,sizeof(struct mcmap_chunk_geom))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	if ((c->meta = (struct mcmap_chunk_meta *)calloc(1,sizeof(struct mcmap_chunk_meta))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	if (mode == MCMAP_FULL)
+		{
+		if ((c->light = (struct mcmap_chunk_light *)calloc(1,sizeof(struct mcmap_chunk_light))) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		if ((c->special = (struct mcmap_chunk_special *)calloc(1,sizeof(struct mcmap_chunk_special))) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		}
+	return c;
+	}
+
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_FULL for fully populated chunk, MCMAP_PARTIAL to save memory
 //on simple geometry inquiries; 'rem' is a boolean flag for whether to remember the raw NBT structure; returns NULL on failure
@@ -427,11 +482,8 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	if (rc == NULL || rc->header == NULL)
 		return NULL;
 	//allocate target struct
-	if ((c = (struct mcmap_chunk *)calloc(1,sizeof(struct mcmap_chunk))) == NULL)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+	if ((c = mcmap_chunk_new(0,0,mode)) == NULL)
 		return NULL;
-		}
 	//determine compression type
 	switch (rc->header->compression)
 		{
@@ -446,12 +498,6 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		return NULL;
 		}
 	
-	//allocate both geometry struct and chunk metadata struct
-	if ((c->geom = (struct mcmap_chunk_geom *)calloc(1,sizeof(struct mcmap_chunk_geom))) == NULL || (c->meta = (struct mcmap_chunk_meta *)calloc(1,sizeof(struct mcmap_chunk_meta))) == NULL)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-		return NULL;
-		}
 	//drill past root container
 	if ((t = nbt_child_find(c->raw,NBT_COMPOUND,"Level")) == NULL)
 		{
@@ -500,12 +546,6 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	//read optional data
 	if (mode == MCMAP_FULL)
 		{
-		//allocate both lighting info struct and special object struct
-		if ((c->light = (struct mcmap_chunk_light *)calloc(1,sizeof(struct mcmap_chunk_light))) == NULL || (c->special = (struct mcmap_chunk_special *)calloc(1,sizeof(struct mcmap_chunk_special))) == NULL)
-			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-			return NULL;
-			}
 		//height map
 		if ((p = nbt_child_find(t,NBT_INT_ARRAY,"HeightMap")) == NULL || p->payload.p_int_array.size != 256)
 			{

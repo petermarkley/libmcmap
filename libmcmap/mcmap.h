@@ -306,8 +306,11 @@ struct mcmap_region
 	size_t size; //byte size of region file
 	};
 
+//allocates a bare minimum region, which can be passed to 'mcmap_chunk_write()'; returns NULL on failure
+struct mcmap_region *mcmap_region_new(void);
+
 //searches the given path to a minecraft region folder and parses the region file for the given X & Z region coordinates
-//returns pointer to region memory structure; if error returns NULL
+//returns pointer to region memory structure; returns NULL on failure
 struct mcmap_region *mcmap_region_read(int ix, int iz, const char *);
 
 //saves the given region memory structure under the given coordinates in the given minecraft map folder
@@ -380,6 +383,10 @@ struct mcmap_chunk
 
 //update height map based on geometry
 void mcmap_chunk_height_update(struct mcmap_chunk *);
+
+//allocate a chunk and record the given per-region chunk coordinates; 'mode' should be MCMAP_PARTIAL
+//to only create geometry and chunk metadata, MCMAP_FULL to create everything; returns NULL on failure
+struct mcmap_chunk *mcmap_chunk_new(int x, int z, mcmap_mode mode);
 
 //takes an individual chunk from a 'struct mcmap_region,' returns a parsed 'mcmap_chunk;'
 //'mode' should be MCMAP_FULL for fully populated chunk, MCMAP_PARTIAL to save memory
