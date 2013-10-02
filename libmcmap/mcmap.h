@@ -459,4 +459,8 @@ struct mcmap_level *mcmap_level_read(const char *, mcmap_mode mode, int rem);
 //free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
 void mcmap_level_free(struct mcmap_level *);
 
+//write to the disk all loaded chunks in the given level using its member 'path'; rem is a boolean flag
+//for whether to remember the raw data afterward; returns 0 on success and -1 on failure
+int mcmap_level_write(struct mcmap_level *, int rem);
+
 #endif
