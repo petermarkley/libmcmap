@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "./mcmap.h"
 #include "./libnbt/nbt.h"
 
@@ -13,18 +14,60 @@ int main(int argc, char **argv)
 	unsigned int cx,cz, rx,rz;
 	struct mcmap_chunk *c;
 	//struct nbt_tag *p;
-	int x,z;
+	int x,y,z;
 	char dir[MAX_STR];
-	cx = 0; cz = 0;
-	rx = 0; rz = 0;
 	
 	if ((l = mcmap_level_read(INP_MAP,MCMAP_PARTIAL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	
 	snprintf(dir,MAX_STR,"%s%s",INP_MAP,l->overworld.path);
+	
+	cx = 31; cz = 31;
+	rx = -1; rz = -1;
+	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
+	cx = 0; cz = 31;
+	rx = 0; rz = -1;
+	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
+	cx = 31; cz = 0;
+	rx = -1; rz = 0;
+	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
+	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
+	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
+	cx = 0; cz = 0;
+	rx = 0; rz = 0;
 	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
@@ -41,14 +84,6 @@ int main(int argc, char **argv)
 	//r = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw;
 	//c = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx];
 	
-	//p = nbt_child_find(l->meta->firstchild,NBT_STRING,"LevelName");
-	//fprintf(stdout,"\nLevel \'%s\':  . . .\n\n",p->payload.p_string);
-	//nbt_print_ascii(stdout,l->meta,-1,32);
-	//fprintf(stdout,"\n");
-	//fprintf(stdout,"NBT data from chunk (%u,%u), decrompressed from %u bytes and last updated %s\n",cx,cz,(unsigned int)r->chunks[cz][cx].size,ctime(&(r->dates[cz][cx])));
-	//nbt_print_ascii(stdout,c->raw,3,8);
-	//fprintf(stdout,"\n");
-	
 	fprintf(stdout,"SkyLight:\n");
 	for (z=0;z<16;z++)
 		{
@@ -59,8 +94,31 @@ int main(int argc, char **argv)
 	
 	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
 	
-	fprintf(stdout,"Performing lighting update . . .\n");
-	mcmap_light_update(l,&(l->overworld));
+	//project bore-dom! :D
+	for (y=66;y>=0;y--)
+		{
+		for (z=-16;z<16;z++)
+			{
+			for (x=-16;x<16;x++)
+				{
+				if (sqrt(pow((double)x,2)+pow((double)z,2)) <= 8.0)
+					{
+					if (y == 60)
+						mcmap_set_block(&(l->overworld),x,y,z,MCMAP_GLASS);
+					else
+						mcmap_set_block(&(l->overworld),x,y,z,MCMAP_AIR);
+					}
+				}
+			}
+		}
+	
+	//fprintf(stdout,"Performing lighting update . . .\n");
+	//mcmap_light_update(l,&(l->overworld));
+	if (mcmap_level_write(l,1) == -1)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
 	
 	/*fprintf(stdout,"HeightMap:\n");
 	for (z=0;z<4;z++)

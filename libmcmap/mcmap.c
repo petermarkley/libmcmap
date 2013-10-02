@@ -382,9 +382,9 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		snprintf(r_name, MCMAP_MAXSTR, "%sregion/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%sr.%d.%d.mca", path, ix, iz);
 	else
-		snprintf(r_name, MCMAP_MAXSTR, "%s/region/r.%d.%d.mca", path, ix, iz);
+		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
 	//open file...
 	if ((r_file = fopen(r_name,"w")) == NULL)
 		{
