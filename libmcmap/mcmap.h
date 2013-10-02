@@ -447,7 +447,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 //perform lighting update on all loaded geometry in the given world of the given level, loading adjacent chunks
 //when available, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *, struct mcmap_level *);
+int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_PARTIAL to let the caller cherry-pick a certain portion with

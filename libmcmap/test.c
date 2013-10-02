@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
 	
 	fprintf(stdout,"Performing lighting update . . .\n");
-	mcmap_light_update(&(l->overworld),l);
+	mcmap_light_update(l,&(l->overworld));
 	
 	/*fprintf(stdout,"HeightMap:\n");
 	for (z=0;z<4;z++)

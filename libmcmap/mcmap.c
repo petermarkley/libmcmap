@@ -1477,7 +1477,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 //perform lighting update on all loaded geometry in the given world of the given level, loading adjacent chunks
 //when available, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
-int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
+int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 	{
 	int **loaded;
 	int x,y,z, lx,lz, rx,rz, bx,bz;
@@ -1767,7 +1767,7 @@ int mcmap_light_update(struct mcmap_level_world *w, struct mcmap_level *l)
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
-int _mcmap_level_world_read(const char *lpath, const char *wpath, struct mcmap_level_world *w, mcmap_mode mode, int rem)
+int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, const char *wpath, mcmap_mode mode, int rem)
 	{
 	DIR *d;
 	struct dirent *e;
@@ -1779,11 +1779,11 @@ int _mcmap_level_world_read(const char *lpath, const char *wpath, struct mcmap_l
 	w->size_z = 0;
 	
 	//resolve full path from level and world components
-	for (i=0;lpath[i]!='\0';i++);
-	if (lpath[i-1] == '/')
-		snprintf(fpath,MCMAP_MAXSTR,"%s%s",lpath,wpath);
+	for (i=0;l->path[i]!='\0';i++);
+	if (l->path[i-1] == '/')
+		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,wpath);
 	else
-		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",lpath,wpath);
+		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,wpath);
 	//open directory stream
 	if ((d = opendir(fpath)) == NULL)
 		{
@@ -1903,7 +1903,7 @@ int _mcmap_level_world_read(const char *lpath, const char *wpath, struct mcmap_l
 struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	{
 	struct mcmap_level *l;
-	char ln[MCMAP_MAXSTR];
+	char lpath[MCMAP_MAXSTR];
 	int i;
 	if (path == NULL)
 		return NULL;
@@ -1911,9 +1911,9 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	//resolve filename from map directory...
 	for (i=0;path[i]!='\0';i++);
 	if (path[i-1] == '/')
-		snprintf(ln,MCMAP_MAXSTR,"%slevel.dat",path);
+		snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",path);
 	else
-		snprintf(ln,MCMAP_MAXSTR,"%s/level.dat",path);
+		snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",path);
 	//allocate level...
 	if ((l = (struct mcmap_level *)calloc(1,sizeof(struct mcmap_level))) == NULL)
 		{
@@ -1928,14 +1928,14 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		}
 	strcpy(l->path,path);
 	//populate level...
-	if (_mcmap_level_world_read(path,"region/",&(l->overworld),mode,rem) == -1)
+	if (_mcmap_level_world_read(l,&(l->overworld),"region/",mode,rem) == -1)
 		return NULL;
-	if (_mcmap_level_world_read(path,"DIM-1/",&(l->nether),mode,rem) == -1)
+	if (_mcmap_level_world_read(l,&(l->nether),"DIM-1/",mode,rem) == -1)
 		return NULL;
-	if (_mcmap_level_world_read(path,"DIM1/",&(l->end),mode,rem) == -1)
+	if (_mcmap_level_world_read(l,&(l->end),"DIM1/",mode,rem) == -1)
 		return NULL;
 	//read 'level.dat' file...
-	if ((l->meta = nbt_file_read(ln)) == NULL)
+	if ((l->meta = nbt_file_read(lpath)) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return NULL;
@@ -1950,9 +1950,9 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	{
 	
 	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
-	mcmap_light_update(&(l->overworld),l);
-	mcmap_light_update(&(l->nether),l);
-	mcmap_light_update(&(l->end),l);
+	mcmap_light_update(l,&(l->overworld));
+	mcmap_light_update(l,&(l->nether));
+	mcmap_light_update(l,&(l->end));
 	
 	//FIXME
 	
