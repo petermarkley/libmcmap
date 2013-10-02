@@ -1944,17 +1944,114 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	return l;
 	}
 
+//worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+//returns 0 on success and -1 on failure
+int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w, int rem)
+	{
+	char fpath[MCMAP_MAXSTR];
+	int i, ishere;
+	int rx,rz,cx,cz;
+	struct mcmap_chunk *c;
+	if (w->path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
+		return -1;
+		}
+	
+	//resolve full path from level and world components
+	for (i=0;l->path[i]!='\0';i++);
+	if (l->path[i-1] == '/')
+		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
+	else
+		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
+	
+	//loop through every region
+	for (rz=0; rz < w->size_z; rz++)
+		{
+		for (rx=0; rx < w->size_x; rx++)
+			{
+			ishere = 0;
+			for (cz=0;cz<16;cz++)
+				{
+				for (cx=0;cx<16;cx++)
+					{
+					if ((c = w->regions[rz][rx]->chunks[cz][cx]) != NULL) //okay we have a loaded chunk now
+						{
+						ishere = 1;
+						//make sure the region is loaded
+						if (w->regions[rz][rx]->raw == NULL)
+							{
+							//first try to read it from the disk
+							if ((w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, fpath)) == NULL)
+								{
+								//failing that, create it anew
+								if ((w->regions[rz][rx]->raw = mcmap_region_new()) == NULL)
+									return -1;
+								}
+							}
+						//save the chunk
+						if (mcmap_chunk_write(w->regions[rz][rx]->raw,cx,cz,c,rem) == -1)
+							return -1;
+						}
+					}
+				}
+			//save the region
+			if (ishere)
+				{
+				if (mcmap_region_write(w->regions[rz][rx]->raw, rx + w->start_x, rz + w->start_z, fpath) == -1)
+					return -1;
+				}
+			//clean up
+			if (!rem && w->regions[rz][rx]->raw != NULL)
+				{
+				mcmap_region_free(w->regions[rz][rx]->raw);
+				w->regions[rz][rx]->raw = NULL;
+				}
+			}
+		}
+	
+	return 0;
+	}
+
 //write to the disk all loaded chunks in the given level using its member 'path'; rem is a boolean flag
 //for whether to remember the raw data afterward; returns 0 on success and -1 on failure
 int mcmap_level_write(struct mcmap_level *l, int rem)
 	{
+	char lpath[MCMAP_MAXSTR];
+	int i;
+	if (l->path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
+		return -1;
+		}
 	
+	//write 'level.dat' file...
+	if (l->meta != NULL)
+		{
+		//resolve filename from map directory...
+		for (i=0;l->path[i]!='\0';i++);
+		if (l->path[i-1] == '/')
+			snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",l->path);
+		else
+			snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",l->path);
+		//write file...
+		if (nbt_file_write(lpath,l->meta,NBT_COMPRESS_GZIP) == -1)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+			return -1;
+			}
+		}
 	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
 	mcmap_light_update(l,&(l->overworld));
 	mcmap_light_update(l,&(l->nether));
 	mcmap_light_update(l,&(l->end));
-	
-	//FIXME
+	//save chunks...
+	if (_mcmap_level_world_write(l,&(l->overworld),rem) == -1)
+		return -1;
+	if (_mcmap_level_world_write(l,&(l->nether),rem) == -1)
+		return -1;
+	if (_mcmap_level_world_write(l,&(l->end),rem) == -1)
+		return -1;
 	
 	return 0;
 	}
