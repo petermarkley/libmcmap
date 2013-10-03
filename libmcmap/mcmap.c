@@ -1066,8 +1066,13 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				{
 				if (Entities->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'Entities\' was not type Compound");
-					return -1;
+					if (Entities->firstchild == NULL)
+						Entities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves an empty 'Entities' list as a list of NBT_BYTEs ... ? go figure
+					else
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'Entities\' List was not type Compound");
+						return -1;
+						}
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
 				//otherwise we should append it to the list, preserving both in one merged list...
@@ -1201,8 +1206,13 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				{
 				if (TileTicks->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'TileTicks\' was not type Compound");
-					return -1;
+					if (TileTicks->firstchild == NULL)
+						TileTicks->payload.p_list = NBT_COMPOUND;
+					else
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileTicks\' List was not type Compound");
+						return -1;
+						}
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
 				//otherwise we should append it to the list, preserving both in one merged list...
@@ -1971,9 +1981,9 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 		for (rx=0; rx < w->size_x; rx++)
 			{
 			ishere = 0;
-			for (cz=0;cz<16;cz++)
+			for (cz=0;cz<32;cz++)
 				{
-				for (cx=0;cx<16;cx++)
+				for (cx=0;cx<32;cx++)
 					{
 					if ((c = w->regions[rz][rx]->chunks[cz][cx]) != NULL) //okay we have a loaded chunk now
 						{

@@ -83,13 +83,21 @@ int main(int argc, char **argv)
 	
 	//r = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw;
 	//c = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx];
-	
+	/*
 	fprintf(stdout,"SkyLight:\n");
 	for (z=0;z<16;z++)
 		{
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02x ",(c->light!=NULL?c->light->sky[64][z][x]:0x00));
 		fprintf(stdout,"\n");
+		}*/
+	
+	fprintf(stderr,"\nbefore:\n");
+	for (z=-12;z<12;z++)
+		{
+		for (x=-12;x<12;x++)
+			fprintf(stderr,"%02x ",mcmap_get_block(&(l->overworld),x,20,z));
+		fprintf(stderr,"\n");
 		}
 	
 	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
@@ -120,20 +128,28 @@ int main(int argc, char **argv)
 		return -1;
 		}
 	
+	fprintf(stderr,"\nafter:\n");
+	for (z=-12;z<12;z++)
+		{
+		for (x=-12;x<12;x++)
+			fprintf(stderr,"%02x ",mcmap_get_block(&(l->overworld),x,20,z));
+		fprintf(stderr,"\n");
+		}
+	
 	/*fprintf(stdout,"HeightMap:\n");
 	for (z=0;z<4;z++)
 		{
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02d ",c->light->height[z][x]);
 		fprintf(stdout,"\n");
-		}*/
+		}
 	fprintf(stdout,"SkyLight:\n");
 	for (z=0;z<16;z++)
 		{
 		for (x=0;x<16;x++)
 			fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
 		fprintf(stdout,"\n");
-		}/*
+		}
 	fprintf(stdout,"BlockLight:\n");
 	for (z=0;z<16;z++)
 		{
