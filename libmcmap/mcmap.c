@@ -704,7 +704,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 //save all existing components of the given chunk to raw NBT data; return 0 on success and -1 on failure
 int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 	{
-	struct nbt_tag *Level, *xPos, *zPos, *LastUpdate, *TerrainPopulated, *InhabitedTime, *Biomes, *HeightMap, *Sections, *loop, *probe, *Entities, *TileEntities, *TileTicks;
+	struct nbt_tag *Level, *xPos, *zPos, *LastUpdate, *TerrainPopulated, *InhabitedTime, *Biomes, *HeightMap, *Sections, *loop, *probe, *probe1, *Entities, *TileEntities, *TileTicks;
 	struct nbt_tag *s[16]; //an array of 16 pointers, each to point at an NBT_COMPOUND in the 'Sections' list
 	unsigned int ishere1, ishere2, add; //flags used for various branch logic
 	int x,y,z, i,j;
@@ -1009,7 +1009,6 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 				return -1;
 				}
-			mcmap_chunk_height_update(c);
 			}
 		else
 			{
@@ -1021,14 +1020,80 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			}
 		memcpy(HeightMap->payload.p_int_array.data,c->light->height,256*4);
 		//handle sky & block light
-		/*for (loop = Sections->firstchild; loop != NULL; loop = loop->next_sib)
+		for (i=0;i<16;i++)
 			{
-			//FIXME - i wonder if we could write 'mcmap_chunk_light_update()' and call it here rather than just deleting everything?
-			if (ishere1 && (probe = nbt_child_find(loop,NBT_BYTE_ARRAY,"SkyLight")) != NULL)
-				nbt_free(nbt_separate(probe));
-			if (ishere1 && (probe = nbt_child_find(loop,NBT_BYTE_ARRAY,"BlockLight")) != NULL)
-				nbt_free(nbt_separate(probe));
-			}*/
+			if (s[i] != NULL)
+				{
+				//allocate or find sky-emitted lighting data...
+				if ((probe = nbt_child_find(s[i],NBT_BYTE_ARRAY,"SkyLight")) == NULL)
+					{
+					if ((probe = nbt_child_new(s[i],NBT_BYTE_ARRAY,"SkyLight")) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+						return -1;
+						}
+					probe->payload.p_byte_array.size = 2048;
+					if ((probe->payload.p_byte_array.data = (int8_t *)calloc(probe->payload.p_byte_array.size,1)) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+						return -1;
+						}
+					}
+				else
+					{
+					if (probe->payload.p_byte_array.size != 2048)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'SkyLight\' was not size 2048");
+						return -1;
+						}
+					}
+				//allocate or find block-emitted lighting data...
+				if ((probe1 = nbt_child_find(s[i],NBT_BYTE_ARRAY,"BlockLight")) == NULL)
+					{
+					if ((probe1 = nbt_child_new(s[i],NBT_BYTE_ARRAY,"BlockLight")) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+						return -1;
+						}
+					probe1->payload.p_byte_array.size = 2048;
+					if ((probe1->payload.p_byte_array.data = (int8_t *)calloc(probe1->payload.p_byte_array.size,1)) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+						return -1;
+						}
+					}
+				else
+					{
+					if (probe1->payload.p_byte_array.size != 2048)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'BlockLight\' was not size 2048");
+						return -1;
+						}
+					}
+				//write to lighting data...
+				j=0;
+				for (y = i*16; y < (i+1)*16; y++)
+					{
+					for (z=0;z<16;z++)
+						{
+						for (x=0;x<16;x++)
+							{
+							if (j%2 == 0)
+								{
+								probe->payload.p_byte_array.data[j/2] = (int8_t)(((c->light->sky[y][z][x])<<0)&0x0F);
+								probe1->payload.p_byte_array.data[j/2] = (int8_t)(((c->light->block[y][z][x])<<0)&0x0F);
+								}
+							else
+								{
+								probe->payload.p_byte_array.data[j/2] = probe->payload.p_byte_array.data[j/2] | (int8_t)(((c->light->sky[y][z][x])<<4)&0xF0);
+								probe1->payload.p_byte_array.data[j/2] = probe1->payload.p_byte_array.data[j/2] | (int8_t)(((c->light->block[y][z][x])<<4)&0xF0);
+								}
+							j++;
+							}
+						}
+					}
+				}
+			}
 		}
 	if (c->meta != NULL)
 		{
@@ -1296,14 +1361,15 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 					snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
 					return -1;
 					}
+				m = (uint8_t *)r->header;
 				//shuffle things starting at the end and moving backwards
 				for (i = e-1; i > r->locations[z][x]; i--)
 					{
 					//find out which chunk this is and slide it toward the end
 					f=0;
-					for (lz=15; lz>=0 && !f; lz--)
+					for (lz=31; lz>=0 && !f; lz--)
 						{
-						for (lx=15; lx>=0 && !f; lx--)
+						for (lx=31; lx>=0 && !f; lx--)
 							{
 							if (r->locations[lz][lx] == i)
 								{
@@ -1322,9 +1388,9 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 					{
 					//find out which chunk this is and slide it toward the end
 					f=0;
-					for (lz=0; lz<16 && !f; lz++)
+					for (lz=0; lz<32 && !f; lz++)
 						{
-						for (lx=0; lx<16 && !f; lx++)
+						for (lx=0; lx<32 && !f; lx++)
 							{
 							if (r->locations[lz][lx] == i)
 								{
@@ -1356,8 +1422,8 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 		r->locations[z][x] = e-1; //put it at the end
 		}
 	//restore all chunk pointers after potentially invalidating them with 'realloc()' or definitely invalidating them with 'memmove()'
-	for (lz=0;lz<16;lz++)
-		for (lx=0;lx<16;lx++)
+	for (lz=0;lz<32;lz++)
+		for (lx=0;lx<32;lx++)
 			_mcmap_region_chunk_refresh(r,lx,lz);
 	//write chunk
 	memcpy(r->chunks[z][x].data,b,s);
@@ -1794,6 +1860,13 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,wpath);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,wpath);
+	//store relative world path
+	if ((w->path = (char *)calloc(strlen(wpath+1),1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return -1;
+		}
+	strcpy(w->path,wpath);
 	//open directory stream
 	if ((d = opendir(fpath)) == NULL)
 		{
@@ -1827,36 +1900,32 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 		}
 	
 	//initialize world
-	w->start_x = minx;
-	w->start_z = minz;
-	w->size_x = maxx-minx+1;
-	w->size_z = maxz-minz+1;
-	if ((w->regions = (struct mcmap_level_region ***)calloc(w->size_z,sizeof(struct mcmap_level_region **))) == NULL)
+	if (!first)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-		return -1;
-		}
-	//store relative world path
-	if ((w->path = (char *)calloc(strlen(wpath+1),1)) == NULL)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-		return -1;
-		}
-	strcpy(w->path,wpath);
-	//allocate regions
-	for (z=0; z < w->size_z; z++)
-		{
-		if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
+		w->start_x = minx;
+		w->start_z = minz;
+		w->size_x = maxx-minx+1;
+		w->size_z = maxz-minz+1;
+		//allocate regions
+		if ((w->regions = (struct mcmap_level_region ***)calloc(w->size_z,sizeof(struct mcmap_level_region **))) == NULL)
 			{
 			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 			return -1;
 			}
-		for (x=0; x < w->size_x; x++)
+		for (z=0; z < w->size_z; z++)
 			{
-			if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
+			if ((w->regions[z] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
 				{
 				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 				return -1;
+				}
+			for (x=0; x < w->size_x; x++)
+				{
+				if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+					return -1;
+					}
 				}
 			}
 		}
