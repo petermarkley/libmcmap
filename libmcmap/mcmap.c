@@ -1326,8 +1326,6 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 	int s, i, d, lx,lz, f, e;
 	
 	//save native chunk data to the raw NBT structure
-	c->x = x;
-	c->z = z;
 	if (_mcmap_chunk_nbt_save(c) != 0)
 		return -1;
 	

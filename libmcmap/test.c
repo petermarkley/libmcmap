@@ -24,8 +24,8 @@ int main(int argc, char **argv)
 		}
 	snprintf(dir,MAX_STR,"%s%s",INP_MAP,l->overworld.path);
 	
-	cx = 31; cz = 31;
-	rx = -1; rz = -1;
+	cx = 0; cz = 0;
+	rx = 0; rz = 0;
 	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
@@ -66,8 +66,8 @@ int main(int argc, char **argv)
 		return -1;
 		}
 	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
-	cx = 0; cz = 0;
-	rx = 0; rz = 0;
+	cx = 31; cz = 31;
+	rx = -1; rz = -1;
 	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
