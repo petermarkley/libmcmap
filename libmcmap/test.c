@@ -93,15 +93,16 @@ int main(int argc, char **argv)
 		}*/
 	
 	fprintf(stderr,"\nbefore:\n");
-	for (z=-12;z<12;z++)
+	for (z=-16;z<16;z++)
 		{
-		for (x=-12;x<12;x++)
-			fprintf(stderr,"%02x ",mcmap_get_block(&(l->overworld),x,20,z));
+		for (x=-16;x<16;x++)
+			fprintf(stderr,"%02d ",mcmap_get_heightmap(&(l->overworld),x,z));
 		fprintf(stderr,"\n");
 		}
+	//nbt_print_ascii(stdout,c->raw,-1,16);
 	
 	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
-	
+	/*
 	//project bore-dom! :D
 	for (y=66;y>=0;y--)
 		{
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-	
+	*/
 	//fprintf(stdout,"Performing lighting update . . .\n");
 	//mcmap_light_update(l,&(l->overworld));
 	if (mcmap_level_write(l,1) == -1)
@@ -129,12 +130,13 @@ int main(int argc, char **argv)
 		}
 	
 	fprintf(stderr,"\nafter:\n");
-	for (z=-12;z<12;z++)
+	for (z=-16;z<16;z++)
 		{
-		for (x=-12;x<12;x++)
-			fprintf(stderr,"%02x ",mcmap_get_block(&(l->overworld),x,20,z));
+		for (x=-16;x<16;x++)
+			fprintf(stderr,"%02d ",mcmap_get_heightmap(&(l->overworld),x,z));
 		fprintf(stderr,"\n");
 		}
+	//nbt_print_ascii(stdout,c->raw,-1,16);
 	
 	/*fprintf(stdout,"HeightMap:\n");
 	for (z=0;z<4;z++)

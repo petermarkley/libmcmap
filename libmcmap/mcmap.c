@@ -267,11 +267,14 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	struct mcmap_region *r;
 	unsigned int x,z,i;
 	if (path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
 		return NULL;
+		}
 	
 	//resolve filename from regions directory...
-	for (i=0;path[i]!='\0';i++);
-	if (path[i-1] == '/')
+	i = strlen(path);
+	if (i==0 || path[i-1] == '/')
 		snprintf(r_name, MCMAP_MAXSTR, "%sr.%d.%d.mca", path, ix, iz);
 	else
 		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
@@ -354,6 +357,11 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 	char r_name[MCMAP_MAXSTR];
 	uint8_t *buff;
 	unsigned int x,z,i;
+	if (path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		return -1;
+		}
 	
 	//let's avoid dereferencing any NULL pointers, shall we?
 	if (r == NULL || r->header == NULL)
@@ -380,8 +388,8 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 		}
 	
 	//resolve filename from map directory...
-	for (i=0;path[i]!='\0';i++);
-	if (path[i-1] == '/')
+	i = strlen(path);
+	if (i==0 || path[i-1] == '/')
 		snprintf(r_name, MCMAP_MAXSTR, "%sr.%d.%d.mca", path, ix, iz);
 	else
 		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
@@ -1326,6 +1334,7 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 	int s, i, d, lx,lz, f, e;
 	
 	//save native chunk data to the raw NBT structure
+	//c->x = x; c->z = z;
 	if (_mcmap_chunk_nbt_save(c) != 0)
 		return -1;
 	
@@ -1561,8 +1570,8 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 	char path[MCMAP_MAXSTR];
 	
 	//resolve full path from level and world components
-	for (i=0;l->path[i]!='\0';i++);
-	if (l->path[i-1] == '/')
+	i = strlen(l->path);
+	if (i==0 || l->path[i-1] == '/')
 		snprintf(path,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
 		snprintf(path,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
@@ -1796,6 +1805,11 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 									if (temp>((int)mcmap_get_blocklight(w,rx,y-1,rz))) //only change for the brighter
 										mcmap_set_blocklight(w,rx,y-1,rz,(uint8_t)temp);
 									}
+								if (mcmap_get_heightmap(w,rx+1,rz-1) > 257) //FIXME - this test is debugging a specific error circumstance
+									{
+									snprintf(mcmap_error,MCMAP_MAXSTR,"HEIGHTMAP OUT OF RANGE %d @ block %d,%d in chunk (%d,%d)",c->light->height[z-1][x+1],x+1,z-1,c->x,c->z);
+									return -1;
+									}
 								//propagate sky-emitted light
 								if (c->light->sky[y][z][x] == (uint8_t)light) //if the light at this block is our current pass
 									{
@@ -1853,8 +1867,8 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 	w->size_z = 0;
 	
 	//resolve full path from level and world components
-	for (i=0;l->path[i]!='\0';i++);
-	if (l->path[i-1] == '/')
+	i = strlen(l->path);
+	if (i==0 || l->path[i-1] == '/')
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,wpath);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,wpath);
@@ -1983,11 +1997,14 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	char lpath[MCMAP_MAXSTR];
 	int i;
 	if (path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
 		return NULL;
+		}
 	
 	//resolve filename from map directory...
-	for (i=0;path[i]!='\0';i++);
-	if (path[i-1] == '/')
+	i = strlen(path);
+	if (i==0 || path[i-1] == '/')
 		snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",path);
 	else
 		snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",path);
@@ -2036,8 +2053,8 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 		}
 	
 	//resolve full path from level and world components
-	for (i=0;l->path[i]!='\0';i++);
-	if (l->path[i-1] == '/')
+	i = strlen(l->path);
+	if (i==0 || l->path[i-1] == '/')
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
@@ -2106,8 +2123,8 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	if (l->meta != NULL)
 		{
 		//resolve filename from map directory...
-		for (i=0;l->path[i]!='\0';i++);
-		if (l->path[i-1] == '/')
+		i = strlen(l->path);
+		if (i==0 || l->path[i-1] == '/')
 			snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",l->path);
 		else
 			snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",l->path);
@@ -2119,9 +2136,12 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 			}
 		}
 	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
-	mcmap_light_update(l,&(l->overworld));
-	mcmap_light_update(l,&(l->nether));
-	mcmap_light_update(l,&(l->end));
+	if (mcmap_light_update(l,&(l->overworld)) == -1)
+		return -1;
+	if (mcmap_light_update(l,&(l->nether)) == -1)
+		return -1;
+	if (mcmap_light_update(l,&(l->end)) == -1)
+		return -1;
 	//save chunks...
 	if (_mcmap_level_world_write(l,&(l->overworld),rem) == -1)
 		return -1;

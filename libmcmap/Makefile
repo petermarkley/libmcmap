@@ -3,4 +3,4 @@ CFLAGS=-lz -lm
 APPLICATION=test
 
 all:
-	cc -Wall -o $(APPLICATION) $(CMODULES) $(CFLAGS)
+	cc -g -Wall -o $(APPLICATION) $(CMODULES) $(CFLAGS)
