@@ -39,6 +39,8 @@
 #include "libnbt/nbt.h"
 #include "cswap.h"
 
+int tempiness = 0;
+
 //return level of light emitted by the given block type < http://minecraft.gamepedia.com/Light#Light-emitting_blocks >
 uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 	{
@@ -1504,6 +1506,8 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	//edit data at the given world coordinates; return -1 if region or chunk are missing or not loaded, otherwise return 0
 	#define _mcmap_set_resolve(w,component1,component2,x,y,z,value) \
 		{ \
+		if (tempiness) \
+			fprintf(stderr,"=a> %d\n",w->regions[0][0]->chunks[30][30]->light->height[0][4]); \
 		int rx,rz, cx,cz, bx,bz; \
 		if ((w) == NULL || y<0 || y>256) \
 			return -1; \
@@ -1519,7 +1523,11 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 			return -1; \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
+		if (tempiness) \
+			fprintf(stderr,"=b> %d - setting w->regions[%d][%d]->chunks[%d][%d]->%s->%s[%d][%d] to %d\n",w->regions[0][0]->chunks[30][30]->light->height[0][4],rz,rx,cz,cx,"component1","component2",bz,bx,(int)value); \
 		w->regions[rz][rx]->chunks[cz][cx]->component1->component2[bz][bx] = (value); \
+		if (tempiness) \
+			fprintf(stderr,"=c> %d\n",w->regions[0][0]->chunks[30][30]->light->height[0][4]); \
 		return 0; \
 		}
 	int mcmap_set_block(struct mcmap_level_world *w, int x, int y, int z, uint16_t val)
@@ -1805,11 +1813,6 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 									if (temp>((int)mcmap_get_blocklight(w,rx,y-1,rz))) //only change for the brighter
 										mcmap_set_blocklight(w,rx,y-1,rz,(uint8_t)temp);
 									}
-								if (mcmap_get_heightmap(w,rx+1,rz-1) > 257) //FIXME - this test is debugging a specific error circumstance
-									{
-									snprintf(mcmap_error,MCMAP_MAXSTR,"HEIGHTMAP OUT OF RANGE %d @ block %d,%d in chunk (%d,%d)",c->light->height[z-1][x+1],x+1,z-1,c->x,c->z);
-									return -1;
-									}
 								//propagate sky-emitted light
 								if (c->light->sky[y][z][x] == (uint8_t)light) //if the light at this block is our current pass
 									{
@@ -1831,8 +1834,21 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 										mcmap_set_skylight(w,rx-1,y,rz,(uint8_t)temp);
 									//examine upward block
 									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y+1,rz))); //what would the propagated light level be?
+									
+									if (light == 15 && x == 1 && y > 254 && z == 1)
+										{
+										fprintf(stderr,"value=%d @ %d,%d,%d\n",w->regions[0][0]->chunks[30][30]->light->height[0][4],x,y,z);
+										tempiness = 1;
+										}
+									
 									if (temp>((int)mcmap_get_skylight(w,rx,y+1,rz))) //only change for the brighter
 										mcmap_set_skylight(w,rx,y+1,rz,(uint8_t)temp);
+									
+									if (w->regions[0][0]->chunks[30][30]->light->height[0][4] > 257) //FIXME - this test is debugging a specific error circumstance
+										{
+										snprintf(mcmap_error,MCMAP_MAXSTR,"HEIGHTMAP(0,4) OUT OF RANGE %d, discovered @ block %d,%d,%d in chunk (%d,%d)",w->regions[0][0]->chunks[30][30]->light->height[0][4],x,y,z,c->x,c->z);
+										return -1;
+										}
 									//examine downward block
 									temp = ((int)c->light->sky[y][z][x])-((int)_mcmap_light_update_extinct(mcmap_get_block(w,rx,y-1,rz))); //what would the propagated light level be?
 									if (temp>((int)mcmap_get_skylight(w,rx,y-1,rz))) //only change for the brighter
@@ -1873,7 +1889,7 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,wpath);
 	//store relative world path
-	if ((w->path = (char *)calloc(strlen(wpath+1),1)) == NULL)
+	if ((w->path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return -1;
@@ -2015,7 +2031,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		return NULL;
 		}
 	//store directory path...
-	if ((l->path = (char *)calloc(strlen(path+1),1)) == NULL)
+	if ((l->path = (char *)calloc(strlen(path)+1,1)) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
