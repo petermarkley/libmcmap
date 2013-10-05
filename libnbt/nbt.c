@@ -41,6 +41,7 @@
 #include <zlib.h>
 #include "nbt.h"
 #include "cswap.h"
+#include "memdb.h"
 
 //operate inflating zlib pipe from input to output, return size of output
 size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_compression_type compress_type)

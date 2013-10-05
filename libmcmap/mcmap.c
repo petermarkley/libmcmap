@@ -38,6 +38,7 @@
 #include "mcmap.h"
 #include "libnbt/nbt.h"
 #include "cswap.h"
+#include "memdb.h"
 
 int tempiness = 0;
 
