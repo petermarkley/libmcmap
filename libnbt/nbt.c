@@ -1045,7 +1045,42 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 int nbt_memcheck(struct nbt_tag *t)
 	{
 	#ifdef __NBT_DEBUG
-	//FIXME
+	int ret1,ret2;
+	if (t == NULL) return 0;
+	if (t->name != NULL && (ret1 = memdb_check(t->name)) != (ret2 = strlen(t->name)+1))
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\'t->name\'=%p) returned %d (expected string of size %d)",t->name,ret1,ret2);
+		return -1;
+		}
+	switch(t->type)
+		{
+		case NBT_BYTE_ARRAY:
+			if (t->payload.p_byte_array.size != 0 && (ret1 = memdb_check(t->payload.p_byte_array.data)) != (ret2 = t->payload.p_byte_array.size))
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_byte_array.data\'=%p) returned %d (expected %d bytes)",t->name,t->payload.p_byte_array.data,ret1,ret2);
+				return -1;
+				}
+		break;
+		case NBT_STRING:
+			if (t->payload.p_string != NULL && (ret1 = memdb_check(t->payload.p_string)) != (ret2 = strlen(t->payload.p_string)+1))
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_string\'=%p) returned %d (expected string of size %d)",t->name,t->payload.p_string,ret1,ret2);
+				return -1;
+				}
+		break;
+		case NBT_INT_ARRAY:
+			if (t->payload.p_int_array.size != 0 && (ret1 = memdb_check(t->payload.p_int_array.data)) != (ret2 = t->payload.p_int_array.size*sizeof(int32_t)))
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_int_array.data\'=%p) returned %d (expected %d 'int32_t's totaling %d bytes)",t->name,t->payload.p_int_array.data,ret1,t->payload.p_int_array.size,ret2);
+				return -1;
+				}
+		break;
+		default: break;
+		}
+	if (t->firstchild != NULL && nbt_memcheck(t->firstchild) == -1)
+		return -1;
+	if (t->next_sib != NULL && nbt_memcheck(t->next_sib) == -1)
+		return -1;
 	#endif
 	return 0;
 	}
