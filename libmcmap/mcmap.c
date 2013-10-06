@@ -2274,6 +2274,8 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	{
 	char lpath[MCMAP_MAXSTR];
 	int i;
+	if (l == NULL)
+		return 0;
 	if (l->path == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
@@ -2360,4 +2362,53 @@ void mcmap_level_free(struct mcmap_level *l)
 		free(l->path);
 	free(l);
 	return;
+	}
+
+//make sure the chunk & region at the given global block coordinates are loaded if they exist; 'create' is a boolean
+// flag for whether to create them if they do not already exist; 'rem' is a flag for whether to remember raw data
+// after reading (for faster resaving); 'mode' being MCMAP_PARTIAL saves memory in simple read-only use cases, but
+// MCMAP_FULL is reasonable for this function; returns 0 on success and -1 on failure
+int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x, int z, mcmap_mode mode, int rem, int create)
+	{
+	int i;
+	int rx,rz, gcx,gcz, cx,cz;
+	char fpath[MCMAP_MAXSTR];
+	if (w == NULL || l == NULL)
+		return 0;
+	
+	//resolve full path from level and world components
+	i = strlen(l->path);
+	if (i==0 || l->path[i-1] == '/')
+		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
+	else
+		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
+	//resolve region & chunk indices
+	rx = (int)floor(((double)x)/512.0) - w->start_x;
+	rz = (int)floor(((double)z)/512.0) - w->start_z;
+	if (rx<0 || rx >= w->size_x || rz<0 || rz >= w->size_z)
+		return 0;
+	gcx = (int)floor(((double)x)/16.0);
+	gcz = (int)floor(((double)z)/16.0);
+	cx = ( (gcx<0) ? ((gcx+1)%32+31) : (gcx%32) );
+	cz = ( (gcz<0) ? ((gcz+1)%32+31) : (gcz%32) );
+	//load chunk
+	if (w->regions[rz][rx]->chunks[cz][cx] == NULL)
+		{
+		//make sure the region is loaded
+		if (w->regions[rz][rx]->raw == NULL)
+			{
+			if ((w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, fpath)) == NULL && create)
+				{
+				if ((w->regions[rz][rx]->raw = mcmap_region_new()) == NULL)
+					return -1;
+				}
+			}
+		//try to load the chunk
+		if ((w->regions[rz][rx]->chunks[cz][cx] = mcmap_chunk_read(&(w->regions[rz][rx]->raw->chunks[cz][cx]),mode,rem)) == NULL && create)
+			{
+			if ((w->regions[rz][rx]->chunks[cz][cx] = mcmap_chunk_new(gcx,gcz,mode)) == NULL)
+				return -1;
+			}
+		}
+	return 0;
 	}

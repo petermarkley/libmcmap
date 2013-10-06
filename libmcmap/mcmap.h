@@ -384,7 +384,7 @@ struct mcmap_chunk
 //update height map based on geometry
 void mcmap_chunk_height_update(struct mcmap_chunk *);
 
-//allocate a chunk and record the given per-region chunk coordinates; 'mode' should be MCMAP_PARTIAL
+//allocate a chunk and record the given global chunk coordinates; 'mode' should be MCMAP_PARTIAL
 //to only create geometry and chunk metadata, MCMAP_FULL to create everything; returns NULL on failure
 struct mcmap_chunk *mcmap_chunk_new(int x, int z, mcmap_mode mode);
 
@@ -451,7 +451,7 @@ int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_PARTIAL to let the caller cherry-pick a certain portion with
-// 'mcmap_area_load()', or MCMAP_FULL to read everything (warning: may consume LOTS of memory);
+// 'mcmap_prime_single()', etc., or MCMAP_FULL to read everything (warning: may consume LOTS of memory);
 // 'rem' is a boolean flag for whether to remember the raw data at each stage (for faster resaving);
 // returns NULL on failure
 struct mcmap_level *mcmap_level_read(const char *, mcmap_mode mode, int rem);
@@ -466,5 +466,11 @@ void mcmap_level_free(struct mcmap_level *);
 //compile with '-D __MCMAP_DEBUG' to use; sanity check all allocated memory spaces involved in the given level struct
 //return 0 if good and -1 if bad
 int mcmap_level_memcheck(struct mcmap_level *);
+
+//make sure the chunk & region at the given global block coordinates are loaded if they exist; 'create' is a boolean
+// flag for whether to create them if they do not already exist; 'rem' is a flag for whether to remember raw data
+// after reading (for faster resaving); 'mode' being MCMAP_PARTIAL saves memory in simple read-only use cases, but
+// MCMAP_FULL is reasonable for this function; returns 0 on success and -1 on failure
+int mcmap_prime_single(struct mcmap_level *, struct mcmap_level_world *, int x, int z, mcmap_mode mode, int rem, int create);
 
 #endif
