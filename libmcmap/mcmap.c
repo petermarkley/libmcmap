@@ -95,7 +95,16 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 				}
 			if (w->regions[z][x]->raw != NULL)
 				{
-				//FIXME
+				if ((ret1 = memdb_check(w->regions[z][x]->raw)) != (ret2 = sizeof(struct mcmap_region)))
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->raw\'=%p) returned %d (expected \'struct mcmap_region\' size %d)",world,z,x,w->regions[z][x]->raw,ret1,ret2);
+					return -1;
+					}
+				if ((ret1 = memdb_check(w->regions[z][x]->raw->header)) != (ret2 = w->regions[z][x]->raw->size))
+					{
+					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->raw->header\'=%p) returned %d (expected %d bytes)",world,z,x,w->regions[z][x]->raw->header,ret1,ret2);
+					return -1;
+					}
 				}
 			for (cz=0;cz<32;cz++)
 				{
@@ -2284,6 +2293,20 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		return -1;
 		}
 	
+	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
+	if (mcmap_light_update(l,&(l->overworld)) == -1)
+		return -1;
+	if (mcmap_light_update(l,&(l->nether)) == -1)
+		return -1;
+	if (mcmap_light_update(l,&(l->end)) == -1)
+		return -1;
+	//save chunks...
+	if (_mcmap_level_world_write(l,&(l->overworld),rem) == -1)
+		return -1;
+	if (_mcmap_level_world_write(l,&(l->nether),rem) == -1)
+		return -1;
+	if (_mcmap_level_world_write(l,&(l->end),rem) == -1)
+		return -1;
 	//write 'level.dat' file...
 	if (l->meta != NULL)
 		{
@@ -2300,20 +2323,6 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 			return -1;
 			}
 		}
-	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
-	if (mcmap_light_update(l,&(l->overworld)) == -1)
-		return -1;
-	if (mcmap_light_update(l,&(l->nether)) == -1)
-		return -1;
-	if (mcmap_light_update(l,&(l->end)) == -1)
-		return -1;
-	//save chunks...
-	if (_mcmap_level_world_write(l,&(l->overworld),rem) == -1)
-		return -1;
-	if (_mcmap_level_world_write(l,&(l->nether),rem) == -1)
-		return -1;
-	if (_mcmap_level_world_write(l,&(l->end),rem) == -1)
-		return -1;
 	
 	return 0;
 	}
