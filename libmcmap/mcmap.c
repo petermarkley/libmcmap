@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 #include "mcmap.h"
 #include "libnbt/nbt.h"
 #include "cswap.h"
@@ -2198,6 +2199,7 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 	int i, ishere;
 	int rx,rz,cx,cz;
 	struct mcmap_chunk *c;
+	time_t t;
 	if (w->path == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
@@ -2234,6 +2236,13 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 								if ((w->regions[rz][rx]->raw = mcmap_region_new()) == NULL)
 									return -1;
 								}
+							}
+						//update the timestamps
+						if ((t = time(NULL)) != -1)
+							{
+							if (c->meta != NULL)
+								c->meta->mtime = t;
+							w->regions[rz][rx]->raw->dates[cz][cx] = t;
 							}
 						//save the chunk
 						if (mcmap_chunk_write(w->regions[rz][rx]->raw,cx,cz,c,rem) == -1)
