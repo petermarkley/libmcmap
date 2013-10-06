@@ -41,7 +41,9 @@
 #include <zlib.h>
 #include "nbt.h"
 #include "cswap.h"
-#include "memdb.h"
+#ifdef __NBT_DEBUG
+	#include "memdb.h"
+#endif
 
 //operate inflating zlib pipe from input to output, return size of output
 size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_compression_type compress_type)
@@ -1036,4 +1038,14 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 		nbt_print_ascii(f,t->next_sib,maxlines,width);
 	
 	return;
+	}
+
+//compile with '-D __NBT_DEBUG' to use; sanity check all allocated memory spaces involved in the given tag struct
+//return 0 if good and -1 if bad
+int nbt_memcheck(struct nbt_tag *t)
+	{
+	#ifdef __NBT_DEBUG
+	//FIXME
+	#endif
+	return 0;
 	}

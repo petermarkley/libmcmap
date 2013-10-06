@@ -463,4 +463,8 @@ int mcmap_level_write(struct mcmap_level *, int rem);
 //free all memory allocated in 'mcmap_level_read()' or 'mcmap_level_new()'
 void mcmap_level_free(struct mcmap_level *);
 
+//compile with '-D __MCMAP_DEBUG' to use; sanity check all allocated memory spaces involved in the given level struct
+//return 0 if good and -1 if bad
+int mcmap_level_memcheck(struct mcmap_level *);
+
 #endif

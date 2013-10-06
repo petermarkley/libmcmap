@@ -38,9 +38,162 @@
 #include "mcmap.h"
 #include "libnbt/nbt.h"
 #include "cswap.h"
-#include "memdb.h"
+#ifdef __MCMAP_DEBUG
+	#include "memdb.h"
+#endif
 
 int tempiness = 0;
+
+//worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+//returns 0 if good and -1 if bad
+int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
+	{
+	#ifdef MCMAP_DEBUG
+	struct mcmap_chunk *c;
+	int ret1,ret2;
+	int x,z, cx,cz;
+	if (w == NULL) return 0;
+	if ((ret1 = memdb_check(w)) != (ret2 = sizeof(struct mcmap_level_world)))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s\'=%p) returned %d (expected \'struct mcmap_level_world\' size %d)",world,l,ret1,ret2);
+		return -1;
+		}
+	if (w->path != NULL && (ret1 = memdb_check(w->path) != (ret2 = strlen(w->path)+1))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->path\'=%p) returned %d (expected string of size %d)",world,w->path,ret1,ret2);
+		return -1;
+		}
+	ret1 = (w->size_x != 0 && w->size_z != 0);
+	if ((w->regions == NULL && ret1) || (!ret1 && w->regions != NULL))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'regions\' NULL status disagrees with recorded size");
+		return -1;
+		}
+	if (w->regions != NULL && (ret1 = memdb_check(w->regions)) != (ret2 = w->size_z*sizeof(struct mcmap_level_region **)))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions\'=%p) returned %d (expected %d pointers totaling %d bytes)",world,w->regions,ret1,w->size_z,ret2);
+		return -1;
+		}
+	for (z=0; z < w->size_z; z++)
+		{
+		if (w->regions[z] == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"\'l->%s->regions[%d]\' exists but points to NULL",world,z);
+			return -1;
+			}
+		if ((ret1 = memdb_check(w->regions[z])) != (ret2 = w->size_x*sizeof(struct mcmap_level_region *)))
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d]\'=%p) returned %d (expected %d pointers totaling %d bytes)",world,z,w->regions[z],ret1,w->size_x,ret2);
+			return -1;
+			}
+		for (x=0; x < w->size_x; x++)
+			{
+			if (w->regions[z][x] == NULL)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"\'l->%s->regions[%d][%d]\' exists but points to NULL",world,z,x);
+				return -1;
+				}
+			if ((ret1 = memdb_check(w->regions[z][x])) != (ret2 = sizeof(struct mcmap_level_region)))
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]\'=%p) returned %d (expected \'struct mcmap_level_region\' size %d)",world,z,x,w->regions[z][x],ret1,ret2);
+				return -1;
+				}
+			if (w->regions[z][x]->raw != NULL && nbt_memcheck(w->regions[z][x]->raw) == -1)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,nbt_error);
+				return -1;
+				}
+			for (cz=0;cz<32;cz++)
+				{
+				for (cx=0;cx<32;cx++)
+					{
+					if ((c = w->regions[z][x]->chunks[cz][cx]) != NULL)
+						{
+						if ((ret1 = memdb_check(c)) != (ret2 = sizeof(struct mcmap_chunk)))
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]\'=%p) returned %d (expected \'struct mcmap_chunk\' size %d)",world,z,x,cz,cx,c,ret1,ret2);
+							return -1;
+							}
+						if (c->raw != NULL && nbt_memcheck(c->raw) == -1)
+							{
+							snprinf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+							return -1;
+							}
+						if (c->geom != NULL && (ret1 = memdb_check(c->geom)) != (ret2 = sizeof(struct mcmap_chunk_geom)))
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->geom\'=%p) returned %d (expected \'struct mcmap_chunk_goem\' size %d)",world,z,x,cz,cx,c->geom,ret1,ret2);
+							return -1;
+							}
+						if (c->light != NULL && (ret1 = memdb_check(c->light)) != (ret2 = sizeof(struct mcmap_chunk_light)))
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->light\'=%p) returned %d (expected \'struct mcmap_chunk_light\' size %d)",world,z,x,cz,cx,c->light,ret1,ret2);
+							return -1;
+							}
+						if (c->meta != NULL && (ret1 = memdb_check(c->meta)) != (ret2 = sizeof(struct mcmap_chunk_meta)))
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->meta\'=%p) returned %d (expected \'struct mcmap_chunk_meta\' size %d)",world,z,x,cz,cx,c->meta,ret1,ret2);
+							return -1;
+							}
+						if (c->special != NULL)
+							{
+							if ((ret1 = memdb_check(c->special)) != (ret2 = sizeof(struct mcmap_chunk_special)))
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->special\'=%p) returned %d (expected \'struct mcmap_chunk_special\' size %d)",world,z,x,cz,cx,c->special,ret1,ret2);
+								return -1;
+								}
+							if (c->special->entities != NULL && nbt_memcheck(c->special->entities) == -1)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->entities\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								return -1;
+								}
+							if (c->special->tile_entities != NULL && nbt_memcheck(c->special->tile_entities) == -1)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_entities\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								return -1;
+								}
+							if (c->special->tile_ticks != NULL && nbt_memcheck(c->special->tile_ticks) == -1)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_ticks\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								return -1;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	#endif
+	return 0;
+	}
+
+//compile with '-D __MCMAP_DEBUG' to use; sanity check all allocated memory spaces involved in the given level struct
+//return 0 if good and -1 if bad
+int mcmap_level_memcheck(struct mcmap_level *l)
+	{
+	#ifdef MCMAP_DEBUG
+	int ret1,ret2;
+	if (l == NULL) return 0;
+	if ((ret1 = memdb_check(l)) != (ret2 = sizeof(struct mcmap_level)))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l\'=%p) returned %d (expected \'struct mcmap_level\' size %d)",l,ret1,ret2);
+		return -1;
+		}
+	if (l->path != NULL && (ret1 = memdb_check(l->path) != (ret2 = strlen(l->path)+1))
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->path\'=%p) returned %d (expected string of size %d)",l->path,ret1,ret2);
+		return -1;
+		}
+	if (l->meta != NULL && nbt_memcheck(l->meta) == -1)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->meta\': %s",NBT_LIBNAME,nbt_error);
+		return -1;
+		}
+	if (_mcmap_level_world_memcheck(&(l->overworld),"overworld") == -1) return -1;
+	if (_mcmap_level_world_memcheck(&(l->nether),"nether") == -1) return -1;
+	if (_mcmap_level_world_memcheck(&(l->end),"end") == -1) return -1;
+	#endif
+	return 0;
+	}
 
 //return level of light emitted by the given block type < http://minecraft.gamepedia.com/Light#Light-emitting_blocks >
 uint8_t _mcmap_light_update_emit(mcmap_blockid i)
@@ -1950,7 +2103,7 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 				}
 			for (x=0; x < w->size_x; x++)
 				{
-				if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(w->size_x,sizeof(struct mcmap_level_region))) == NULL)
+				if ((w->regions[z][x] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 					return -1;

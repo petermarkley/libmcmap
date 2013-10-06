@@ -139,4 +139,8 @@ struct nbt_tag *nbt_child_new(struct nbt_tag *, nbt_tagid, const char *);
 //stop printing array data after 'maxlines' lines (-1 for unlimited)
 void nbt_print_ascii(FILE *, struct nbt_tag *, int maxlines, int width);
 
+//compile with '-D __NBT_DEBUG' to use; sanity check all allocated memory spaces involved in the given tag struct
+//return 0 if good and -1 if bad
+int nbt_memcheck(struct nbt_tag *);
+
 #endif
