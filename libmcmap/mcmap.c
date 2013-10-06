@@ -48,17 +48,12 @@ int tempiness = 0;
 //returns 0 if good and -1 if bad
 int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 	{
-	#ifdef MCMAP_DEBUG
+	#ifdef __MCMAP_DEBUG
 	struct mcmap_chunk *c;
 	int ret1,ret2;
 	int x,z, cx,cz;
 	if (w == NULL) return 0;
-	if ((ret1 = memdb_check(w)) != (ret2 = sizeof(struct mcmap_level_world)))
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s\'=%p) returned %d (expected \'struct mcmap_level_world\' size %d)",world,l,ret1,ret2);
-		return -1;
-		}
-	if (w->path != NULL && (ret1 = memdb_check(w->path) != (ret2 = strlen(w->path)+1))
+	if (w->path != NULL && (ret1 = memdb_check(w->path)) != (ret2 = strlen(w->path)+1))
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->path\'=%p) returned %d (expected string of size %d)",world,w->path,ret1,ret2);
 		return -1;
@@ -98,10 +93,9 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 				snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]\'=%p) returned %d (expected \'struct mcmap_level_region\' size %d)",world,z,x,w->regions[z][x],ret1,ret2);
 				return -1;
 				}
-			if (w->regions[z][x]->raw != NULL && nbt_memcheck(w->regions[z][x]->raw) == -1)
+			if (w->regions[z][x]->raw != NULL)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,nbt_error);
-				return -1;
+				//FIXME
 				}
 			for (cz=0;cz<32;cz++)
 				{
@@ -116,7 +110,7 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 							}
 						if (c->raw != NULL && nbt_memcheck(c->raw) == -1)
 							{
-							snprinf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
 							return -1;
 							}
 						if (c->geom != NULL && (ret1 = memdb_check(c->geom)) != (ret2 = sizeof(struct mcmap_chunk_geom)))
@@ -170,7 +164,7 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 //return 0 if good and -1 if bad
 int mcmap_level_memcheck(struct mcmap_level *l)
 	{
-	#ifdef MCMAP_DEBUG
+	#ifdef __MCMAP_DEBUG
 	int ret1,ret2;
 	if (l == NULL) return 0;
 	if ((ret1 = memdb_check(l)) != (ret2 = sizeof(struct mcmap_level)))
@@ -178,7 +172,7 @@ int mcmap_level_memcheck(struct mcmap_level *l)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l\'=%p) returned %d (expected \'struct mcmap_level\' size %d)",l,ret1,ret2);
 		return -1;
 		}
-	if (l->path != NULL && (ret1 = memdb_check(l->path) != (ret2 = strlen(l->path)+1))
+	if (l->path != NULL && (ret1 = memdb_check(l->path)) != (ret2 = strlen(l->path)+1))
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->path\'=%p) returned %d (expected string of size %d)",l->path,ret1,ret2);
 		return -1;
@@ -2000,7 +1994,8 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 									
 									if (w->regions[0][0]->chunks[30][30]->light->height[0][4] > 257) //FIXME - this test is debugging a specific error circumstance
 										{
-										snprintf(mcmap_error,MCMAP_MAXSTR,"HEIGHTMAP(0,4) OUT OF RANGE %d, discovered @ block %d,%d,%d in chunk (%d,%d)",w->regions[0][0]->chunks[30][30]->light->height[0][4],x,y,z,c->x,c->z);
+										if (mcmap_level_memcheck(l) == 0)
+											snprintf(mcmap_error,MCMAP_MAXSTR,"HEIGHTMAP(0,4) OUT OF RANGE %d, discovered @ block %d,%d,%d in chunk (%d,%d)",w->regions[0][0]->chunks[30][30]->light->height[0][4],x,y,z,c->x,c->z);
 										return -1;
 										}
 									//examine downward block
