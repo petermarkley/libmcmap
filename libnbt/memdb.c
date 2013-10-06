@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #define MEMDB_LIBNAME "memdb"
-#define MEMDB_MAX 2*1024*1024
+#define MEMDB_MAX 8192
 
 struct memdb_lot
 	{
@@ -29,7 +29,7 @@ void memdb_init(void)
 int memdb_find(void *p)
 	{
 	int i;
-	for (i=0; i<MEMDB_MAX && memdb_alloced[i].ptr != p ;i++);
+	for (i=0; i<MEMDB_MAX && memdb_alloced[i].ptr != p; i++);
 	if (i == MEMDB_MAX)
 		{
 		if (p == NULL)
@@ -48,10 +48,30 @@ int memdb_check(void *p)
 	memdb_init();
 	if (p == NULL)
 		return -1;
-	for (i=0; i<MEMDB_MAX && memdb_alloced[i].ptr != p ;i++);
+	for (i=0; i<MEMDB_MAX && memdb_alloced[i].ptr != p; i++);
 	if (i == MEMDB_MAX)
 		return -1;
 	return memdb_alloced[i].size;
+	}
+
+//return total memory usage
+int memdb_heap_size(void)
+	{
+	int i,size = 0;
+	memdb_init();
+	for (i=0;i<MEMDB_MAX;i++)
+		if (memdb_alloced[i].ptr != NULL) size += memdb_alloced[i].size;
+	return size;
+	}
+
+//return total number of allocations
+int memdb_heap_num(void)
+	{
+	int i, count = 0;
+	memdb_init();
+	for (i=0;i<MEMDB_MAX;i++)
+		if (memdb_alloced[i].ptr != NULL) count++;
+	return count;
 	}
 
 void *memdb_malloc(size_t size)

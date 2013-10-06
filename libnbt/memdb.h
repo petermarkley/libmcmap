@@ -19,4 +19,10 @@ void memdb_free(void *ptr);
 //return size of memory allocated at 'p', or -1 if not found
 int memdb_check(void *p);
 
+//return total memory usage
+int memdb_heap_size(void);
+
+//return total number of allocations
+int memdb_heap_num(void);
+
 #endif
