@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	//nbt_print_ascii(stdout,c->raw,-1,16);
 	
 	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
-	/*
+	
 	//project bore-dom! :D
 	for (y=66;y>=0;y--)
 		{
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-	*/
+	
 	//fprintf(stdout,"Performing lighting update . . .\n");
 	//mcmap_light_update(l,&(l->overworld));
 	if (mcmap_level_write(l,1) == -1)
