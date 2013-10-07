@@ -2397,10 +2397,15 @@ int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x
 		//make sure the region is loaded
 		if (w->regions[rz][rx]->raw == NULL)
 			{
-			if ((w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, fpath)) == NULL && create)
+			if ((w->regions[rz][rx]->raw = mcmap_region_read(rx + w->start_x, rz + w->start_z, fpath)) == NULL)
 				{
-				if ((w->regions[rz][rx]->raw = mcmap_region_new()) == NULL)
-					return -1;
+				if (create)
+					{
+					if ((w->regions[rz][rx]->raw = mcmap_region_new()) == NULL)
+						return -1;
+					}
+				else
+					return 0;
 				}
 			}
 		//try to load the chunk
@@ -2414,9 +2419,9 @@ int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x
 	}
 
 //call 'mcmap_prime_single()' for all blocks in the rectangle between the two given coordinate pairs, inclusive; return 0 on success and -1 on failure
-int mcmap_prime_rect(struct mcmap_level *l, struct mcmap_level_world *w, int x1, int z1, int x2, int z2 mcmap_mode mode, int rem, int create)
+int mcmap_prime_rect(struct mcmap_level *l, struct mcmap_level_world *w, int x1, int z1, int x2, int z2, mcmap_mode mode, int rem, int create)
 	{
-	int x,z, cx1,cz1, cx2,cz2, cx,cz;
+	int x,z, cx1,cz1, cx2,cz2;
 	//locate which corner is which
 	if (x2 < x1)
 		{
@@ -2435,6 +2440,51 @@ int mcmap_prime_rect(struct mcmap_level *l, struct mcmap_level_world *w, int x1,
 	cz1 = (int)floor(((double)z1)/16.0);
 	cx2 = (int)floor(((double)x2)/16.0);
 	cz2 = (int)floor(((double)z2)/16.0);
-	//loop through ... something (FIXME)
+	//loop through chunks
+	for (z=cz1; z<=cz2; z++)
+		{
+		for (x=cx1; x<=cx2; x++)
+			{
+			if (mcmap_prime_single(l,w,x*16,z*16,mode,rem,create) == -1)
+				return -1;
+			}
+		}
+	return 0;
+	}
+
+//call 'mcmap_prime_single()' for all blocks in the circle with the given center and radius; return 0 on success and -1 on failure
+int mcmap_prime_circle(struct mcmap_level *l, struct mcmap_level_world *w, int x, int z, double radius, mcmap_mode mode, int rem, int create)
+	{
+	int bx,bz, cx1,cz1, cx2,cz2, cx,cz;
+	//locate corners
+	cx1 = (int)floor(floor(((double)x)-radius)/16.0);
+	cz1 = (int)floor(floor(((double)z)-radius)/16.0);
+	cx2 = (int)floor( ceil(((double)x)+radius)/16.0);
+	cz2 = (int)floor( ceil(((double)z)+radius)/16.0);
+	//loop through chunks
+	for (cz=cz1; cz<=cz2; cz++)
+		{
+		for (cx=cx1; cx<=cx2; cx++)
+			{
+			//find the block in the chunk closest to the center of the circle to test
+			bx = cx*16;
+			if (bx < x)
+				{
+				bx += 15;
+				if (bx > x)
+					bx = x;
+				}
+			bz = cz*16;
+			if (bz < z)
+				{
+				bz += 15;
+				if (bz > z)
+					bz = z;
+				}
+			//load the chunk if its closest corner intrudes in the circle
+			if (sqrt(pow((double)bx,2)+pow((double)bz,2)) <= radius && mcmap_prime_single(l,w,bx,bz,mode,rem,create) == -1)
+				return -1;
+			}
+		}
 	return 0;
 	}

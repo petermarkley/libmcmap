@@ -474,6 +474,9 @@ int mcmap_level_memcheck(struct mcmap_level *);
 int mcmap_prime_single(struct mcmap_level *, struct mcmap_level_world *, int x, int z, mcmap_mode mode, int rem, int create);
 
 //call 'mcmap_prime_single()' for all blocks in the rectangle between the two given coordinate pairs, inclusive; return 0 on success and -1 on failure
-int mcmap_prime_rect(struct mcmap_level *, struct mcmap_level_world *, int x1, int z1, int x2, int z2 mcmap_mode mode, int rem, int create);
+int mcmap_prime_rect(struct mcmap_level *, struct mcmap_level_world *, int x1, int z1, int x2, int z2, mcmap_mode mode, int rem, int create);
+
+//call 'mcmap_prime_single()' for all blocks in the circle with the given center and radius; return 0 on success and -1 on failure
+int mcmap_prime_circle(struct mcmap_level *, struct mcmap_level_world *, int x, int z, double radius, mcmap_mode mode, int rem, int create);
 
 #endif
