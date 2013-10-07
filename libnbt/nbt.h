@@ -134,9 +134,6 @@ struct nbt_tag *nbt_child_find(struct nbt_tag *, nbt_tagid, const char *);
 //(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_new(struct nbt_tag *, nbt_tagid, const char *);
 
-//'realloc()' the string pointed to by 's1' to the proper length and 'strncpy()' from 's2'; return 0 on success and -1 on failure
-int nbt_string_change(char **s1, const char *s2);
-
 //print ASCII representation of NBT structure to the given FILE stream;
 //print arrays with 'width' items per line;
 //stop printing array data after 'maxlines' lines (-1 for unlimited)

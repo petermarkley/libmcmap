@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
 #include "./mcmap.h"
 #include "./libnbt/nbt.h"
 
@@ -53,7 +54,12 @@ int main(int argc, char **argv)
 		}
 	
 	//save
-	nbt_string_change(&(l->path),OUT_MAP);
+	if ((l->path = (char *)realloc(l->path,(x = (strlen(OUT_MAP)+1)))) == NULL)
+		{
+		fprintf(stderr,"realloc() returned NULL");
+		return -1;
+		}
+	strncpy(l->path,OUT_MAP,x);
 	if (mcmap_level_write(l,1) == -1)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
