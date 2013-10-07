@@ -2412,3 +2412,29 @@ int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x
 		}
 	return 0;
 	}
+
+//call 'mcmap_prime_single()' for all blocks in the rectangle between the two given coordinate pairs, inclusive; return 0 on success and -1 on failure
+int mcmap_prime_rect(struct mcmap_level *l, struct mcmap_level_world *w, int x1, int z1, int x2, int z2 mcmap_mode mode, int rem, int create)
+	{
+	int x,z, cx1,cz1, cx2,cz2, cx,cz;
+	//locate which corner is which
+	if (x2 < x1)
+		{
+		x = x2;
+		x2 = x1;
+		x1 = x;
+		}
+	if (z2 < z1)
+		{
+		z = z2;
+		z2 = z1;
+		z1 = z;
+		}
+	//resolve chunk coordinates for the appropriate corners
+	cx1 = (int)floor(((double)x1)/16.0);
+	cz1 = (int)floor(((double)z1)/16.0);
+	cx2 = (int)floor(((double)x2)/16.0);
+	cz2 = (int)floor(((double)z2)/16.0);
+	//loop through ... something (FIXME)
+	return 0;
+	}
