@@ -5,6 +5,7 @@
 #include "./libnbt/nbt.h"
 
 #define INP_MAP "./test_map/saves/New World/"
+#define OUT_MAP "./test_map/saves/New World 2/"
 #define MAX_STR 1024
 
 int main(int argc, char **argv)
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
 		}
 	
 	//save
+	nbt_string_change(&(l->path),OUT_MAP);
 	if (mcmap_level_write(l,1) == -1)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
@@ -68,6 +70,11 @@ int main(int argc, char **argv)
 		}
 	
 	//free
+	if (mcmap_level_memcheck(l) == -1)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
 	mcmap_level_free(l);
 	return 0;
 	}

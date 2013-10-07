@@ -2212,6 +2212,12 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
+	//make sure directory exists
+	if (mkdir(fpath,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() returned %d on \'%s\'",errno,fpath);
+		return -1;
+		}
 	
 	//loop through every region
 	for (rz=0; rz < w->size_z; rz++)
@@ -2279,6 +2285,12 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	if (l->path == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
+		return -1;
+		}
+	//make sure directory exists
+	if (mkdir(l->path,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() returned %d on \'%s\'",errno,l->path);
 		return -1;
 		}
 	

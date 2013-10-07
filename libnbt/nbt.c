@@ -902,6 +902,24 @@ struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char
 	return t;
 	}
 
+//'realloc()' the string pointed to by 's1' to the proper length and 'strncpy()' from 's2'; return 0 on success and -1 on failure
+int nbt_string_change(char **s1, const char *s2)
+	{
+	size_t i;
+	if (s1 == NULL || s1[0] == NULL || s2 == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"nbt_string_change() received one or both pointers NULL");
+		return -1;
+		}
+	if ((s1[0] = (char *)realloc(s1[0],(i = (strlen(s2)+1)))) == NULL)
+		{
+		snprintf(nbt_error,NBT_MAXSTR,"realloc() returned NULL");
+		return -1;
+		}
+	strncpy(s1[0],s2,i);
+	return 0;
+	}
+
 //print ASCII representation of NBT structure to the given FILE stream;
 //print arrays with 'width' items per line;
 //stop printing array data after 'maxlines' lines (-1 for unlimited)
