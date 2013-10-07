@@ -10,88 +10,21 @@
 int main(int argc, char **argv)
 	{
 	struct mcmap_level *l;
-	struct mcmap_region *r;
-	unsigned int cx,cz, rx,rz;
-	struct mcmap_chunk *c;
-	//struct nbt_tag *p;
 	int x,y,z;
-	char dir[MAX_STR];
 	
+	//load
 	if ((l = mcmap_level_read(INP_MAP,MCMAP_PARTIAL,1)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
-	snprintf(dir,MAX_STR,"%s%s",INP_MAP,l->overworld.path);
+	if (mcmap_prime_circle(l,&(l->overworld),0,0,10.0,MCMAP_FULL,1,0) == -1)
+		{
+		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
+		return -1;
+		}
 	
-	cx = 0; cz = 0;
-	rx = 0; rz = 0;
-	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
-	cx = 0; cz = 31;
-	rx = 0; rz = -1;
-	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
-	cx = 31; cz = 0;
-	rx = -1; rz = 0;
-	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
-	cx = 31; cz = 31;
-	rx = -1; rz = -1;
-	if ((r = mcmap_region_read(rx,rz,dir)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw = r;
-	if ((c = mcmap_chunk_read(&(r->chunks[cz][cx]),MCMAP_FULL,1)) == NULL)
-		{
-		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
-		return -1;
-		}
-	l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx] = c;
-	
-	//r = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->raw;
-	//c = l->overworld.regions[rz-l->overworld.start_z][rx-l->overworld.start_x]->chunks[cz][cx];
-	/*
-	fprintf(stdout,"SkyLight:\n");
-	for (z=0;z<16;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02x ",(c->light!=NULL?c->light->sky[64][z][x]:0x00));
-		fprintf(stdout,"\n");
-		}*/
-	
+	//print
 	fprintf(stderr,"\nbefore:\n");
 	for (z=-16;z<16;z++)
 		{
@@ -99,9 +32,6 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%02d ",mcmap_get_heightmap(&(l->overworld),x,z));
 		fprintf(stderr,"\n");
 		}
-	//nbt_print_ascii(stdout,c->raw,-1,16);
-	
-	//mcmap_set_block(&(l->overworld),11,66,0,MCMAP_LEAVES);
 	
 	//project bore-dom! :D
 	for (y=66;y>=0;y--)
@@ -121,14 +51,14 @@ int main(int argc, char **argv)
 			}
 		}
 	
-	//fprintf(stdout,"Performing lighting update . . .\n");
-	//mcmap_light_update(l,&(l->overworld));
+	//save
 	if (mcmap_level_write(l,1) == -1)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
 	
+	//print again
 	fprintf(stderr,"\nafter:\n");
 	for (z=-16;z<16;z++)
 		{
@@ -136,44 +66,8 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%02d ",mcmap_get_heightmap(&(l->overworld),x,z));
 		fprintf(stderr,"\n");
 		}
-	//nbt_print_ascii(stdout,c->raw,-1,16);
 	
-	/*fprintf(stdout,"HeightMap:\n");
-	for (z=0;z<4;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02d ",c->light->height[z][x]);
-		fprintf(stdout,"\n");
-		}
-	fprintf(stdout,"SkyLight:\n");
-	for (z=0;z<16;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02x ",c->light->sky[64][z][x]);
-		fprintf(stdout,"\n");
-		}
-	fprintf(stdout,"BlockLight:\n");
-	for (z=0;z<16;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02x ",c->light->block[64][z][x]);
-		fprintf(stdout,"\n");
-		}
-	fprintf(stdout,"Blocks:\n");
-	for (z=0;z<4;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02x ",c->geom->blocks[64][z][x]);
-		fprintf(stdout,"\n");
-		}
-	fprintf(stdout,"Block Data:\n");
-	for (z=0;z<4;z++)
-		{
-		for (x=0;x<16;x++)
-			fprintf(stdout,"%02x ",c->geom->data[64][z][x]);
-		fprintf(stdout,"\n");
-		}*/
-	
+	//free
 	mcmap_level_free(l);
 	return 0;
 	}
