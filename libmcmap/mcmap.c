@@ -405,7 +405,7 @@ struct mcmap_region *mcmap_region_new(void)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
-	r->size = 2048;
+	r->size = 8192;
 	if ((r->header = (struct mcmap_region_header *)calloc(r->size,1)) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
@@ -1584,7 +1584,7 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 			snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
 			return -1;
 			}
-		r->locations[z][x] = e-1; //put it at the end
+		r->locations[z][x] = e; //put it at the end
 		}
 	//restore all chunk pointers after potentially invalidating them with 'realloc()' or definitely invalidating them with 'memmove()'
 	for (lz=0;lz<32;lz++)
@@ -2064,9 +2064,9 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 			}
 		}
 	
-	//initialize world
 	if (!first)
 		{
+		//initialize world
 		w->start_x = minx;
 		w->start_z = minz;
 		w->size_x = maxx-minx+1;
@@ -2093,26 +2093,25 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 					}
 				}
 			}
-		}
-	
-	//populate world
-	if (mode == MCMAP_FULL)
-		{
-		rewinddir(d);
-		while ((e = readdir(d)) != NULL)
+		//populate world
+		if (mode == MCMAP_FULL)
 			{
-			if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
+			rewinddir(d);
+			while ((e = readdir(d)) != NULL)
 				{
-				ix = x - w->start_x;
-				iz = z - w->start_z;
-				//read region
-				if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,fpath)) != NULL)
+				if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
 					{
-					//read chunks
-					for (lz=0;lz<16;lz++)
+					ix = x - w->start_x;
+					iz = z - w->start_z;
+					//read region
+					if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,fpath)) != NULL)
 						{
-						for (lx=0;lx<16;lx++)
-							w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
+						//read chunks
+						for (lz=0;lz<16;lz++)
+							{
+							for (lx=0;lx<16;lx++)
+								w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
+							}
 						}
 					}
 				}
@@ -2382,7 +2381,7 @@ void mcmap_level_free(struct mcmap_level *l)
 // MCMAP_FULL is reasonable for this function; returns 0 on success and -1 on failure
 int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x, int z, mcmap_mode mode, int rem, int create)
 	{
-	int i;
+	int i, lx,lz;
 	int rx,rz, gcx,gcz, cx,cz;
 	char fpath[MCMAP_MAXSTR];
 	if (w == NULL || l == NULL)
@@ -2394,11 +2393,162 @@ int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
-	//resolve region & chunk indices
-	rx = (int)floor(((double)x)/512.0) - w->start_x;
-	rz = (int)floor(((double)z)/512.0) - w->start_z;
-	if (rx<0 || rx >= w->size_x || rz<0 || rz >= w->size_z)
-		return 0;
+	//make sure region array exists, resolve region & chunk indices
+	if (w->regions == NULL)
+		{
+		if (create)
+			{
+			w->size_x = 1;
+			w->size_z = 1;
+			if ((w->regions       = (struct mcmap_level_region ***)calloc(1,sizeof(struct mcmap_level_region **))) == NULL ||
+			    (w->regions[0]    = (struct mcmap_level_region  **)calloc(1,sizeof(struct mcmap_level_region  *))) == NULL ||
+			    (w->regions[0][0] = (struct mcmap_level_region   *)calloc(1,sizeof(struct mcmap_level_region   ))) == NULL)
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+				return -1;
+				}
+			w->start_x = (int)floor(((double)x)/512.0);
+			w->start_z = (int)floor(((double)z)/512.0);
+			rx = 0;
+			rz = 0;
+			}
+		else
+			return 0;
+		}
+	else
+		{
+		rx = (int)floor(((double)x)/512.0) - w->start_x;
+		rz = (int)floor(((double)z)/512.0) - w->start_z;
+		//make sure we have room if we're planning to create the region
+		if (rx<0 || rx >= w->size_x || rz<0 || rz >= w->size_z)
+			{
+			if (create)
+				{
+				if (rz >= w->size_z)
+					{
+					//remember old size for a sec
+					i = w->size_z;
+					//expand array
+					w->size_z = rz+1;
+					if ((w->regions = (struct mcmap_level_region ***)realloc(w->regions,w->size_z*sizeof(struct mcmap_level_region **))) == NULL)
+						{
+						snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+						return -1;
+						}
+					//fill newly allocated space
+					for (lz=i; lz < w->size_z; lz++)
+						{
+						if ((w->regions[lz] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+							return -1;
+							}
+						for (lx=0; lx < w->size_x; lx++)
+							{
+							if ((w->regions[lz][lx] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+								return -1;
+								}
+							}
+						}
+					}
+				else
+					{
+					if (rz < 0)
+						{
+						//expand array
+						w->size_z -= rz;
+						w->start_z += rz;
+						if ((w->regions = (struct mcmap_level_region ***)realloc(w->regions,w->size_z*sizeof(struct mcmap_level_region **))) == NULL)
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+							return -1;
+							}
+						//slide all the old entries back
+						for (lz = w->size_z-1; lz >= -rz; lz--)
+							w->regions[lz] = w->regions[lz+rz];
+						//fill newly allocated space
+						for (lz=0; lz < -rz; lz++)
+							{
+							if ((w->regions[lz] = (struct mcmap_level_region **)calloc(w->size_x,sizeof(struct mcmap_level_region *))) == NULL)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+								return -1;
+								}
+							for (lx=0; lx < w->size_x; lx++)
+								{
+								if ((w->regions[lz][lx] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
+									{
+									snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+									return -1;
+									}
+								}
+							}
+						//update the index
+						rz = 0;
+						}
+					}
+				if (rx >= w->size_x)
+					{
+					//remember old size for a sec
+					i = w->size_x;
+					//expand array
+					w->size_x = rx+1;
+					for (lz=0; lz < w->size_z; lz++)
+						{
+						if ((w->regions[lz] = (struct mcmap_level_region **)realloc(w->regions[lz],w->size_x*sizeof(struct mcmap_level_region *))) == NULL)
+							{
+							snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+							return -1;
+							}
+						//fill newly allocated space
+						for (lx=i; lx < w->size_x; lx++)
+							{
+							if ((w->regions[lz][lx] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+								return -1;
+								}
+							}
+						}
+					}
+				else
+					{
+					if (rx < 0)
+						{
+						//expand array
+						w->size_x -= rx;
+						w->start_z += rx;
+						for (lz=0; lz < w->size_z; lz++)
+							{
+							if ((w->regions[lz] = (struct mcmap_level_region **)realloc(w->regions[lz],w->size_x*sizeof(struct mcmap_level_region *))) == NULL)
+								{
+								snprintf(mcmap_error,MCMAP_MAXSTR,"realloc() returned NULL");
+								return -1;
+								}
+							//slide all the old entries back
+							for (lx = w->size_x-1; lx >= -rx; lx--)
+								w->regions[lz][lx] = w->regions[lz][lx+rx];
+							//fill newly allocated space
+							for (lx=0; lx < -rx; lx++)
+								{
+								if ((w->regions[lz][lx] = (struct mcmap_level_region *)calloc(1,sizeof(struct mcmap_level_region))) == NULL)
+									{
+									snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+									return -1;
+									}
+								}
+							}
+						//update the index
+						rx = 0;
+						}
+					}
+				}
+			else
+				return 0;
+			}
+		}
 	gcx = (int)floor(((double)x)/16.0);
 	gcz = (int)floor(((double)z)/16.0);
 	cx = ( (gcx<0) ? ((gcx+1)%32+31) : (gcx%32) );
