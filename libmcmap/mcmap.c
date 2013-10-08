@@ -2112,9 +2112,9 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 					if ((w->regions[iz][ix]->raw = mcmap_region_read(x,z,fpath)) != NULL)
 						{
 						//read chunks
-						for (lz=0;lz<16;lz++)
+						for (lz=0;lz<32;lz++)
 							{
-							for (lx=0;lx<16;lx++)
+							for (lx=0;lx<32;lx++)
 								w->regions[iz][ix]->chunks[lz][lx] = mcmap_chunk_read(&(w->regions[iz][ix]->raw->chunks[lz][lx]),mode,rem);
 							}
 						}
