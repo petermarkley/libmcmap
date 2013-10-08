@@ -877,7 +877,7 @@ struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char
 	//name
 	if (name != NULL)
 		{
-		if ((t->name = (char *)calloc(strlen(name),1)) == NULL)
+		if ((t->name = (char *)calloc(strlen(name)+1,1)) == NULL)
 			{
 			snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
 			return NULL;
