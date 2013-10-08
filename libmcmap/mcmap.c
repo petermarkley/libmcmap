@@ -1018,7 +1018,10 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			if (!ishere2) //if the section should be empty, just delete it from the NBT structure...
 				{
 				if (s[i] != NULL)
+					{
 					nbt_free(nbt_separate(s[i]));
+					s[i] = NULL;
+					}
 				}
 			else
 				{
@@ -1658,6 +1661,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	
 	int32_t mcmap_get_heightmap(struct mcmap_level_world *w, int x, int z)
 		{_mcmap_get_resolve(w,light,height,x,0,z,-1);}
+	#undef _mcmap_get_resolve
 	
 	//edit data at the given world coordinates; return -1 if region or chunk are missing or not loaded, otherwise return 0
 	#define _mcmap_set_resolve(w,component1,component2,x,y,z,value) \
@@ -1697,6 +1701,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	
 	int mcmap_set_heightmap(struct mcmap_level_world *w, int x, int z, int32_t val)
 		{_mcmap_set_resolve(w,light,height,x,0,z,val);}
+	#undef _mcmap_set_resolve
 	
 	//retrieve the chunk struct for the given global block coordinates
 	struct mcmap_chunk *mcmap_get_chunk(struct mcmap_level_world *w, int x, int z)
@@ -2339,9 +2344,9 @@ void _mcmap_level_world_free(struct mcmap_level_world *w)
 			{
 			if (w->regions[z][x] != NULL)
 				{
-				for (lz=0;lz<16;lz++)
+				for (lz=0;lz<32;lz++)
 					{
-					for (lx=0;lx<16;lx++)
+					for (lx=0;lx<32;lx++)
 						{
 						if (w->regions[z][x]->chunks[lz][lx] != NULL)
 							mcmap_chunk_free(w->regions[z][x]->chunks[lz][lx]);

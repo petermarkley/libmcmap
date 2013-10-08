@@ -96,6 +96,12 @@ int main(int argc, char **argv)
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;
 		}
+	#ifdef __MCMAP_DEBUG
+	fprintf(stderr,"=====heap summary: %d bytes across %d allocations=====\n",memdb_heap_size(),memdb_heap_num());
+	#endif
 	mcmap_level_free(l);
+	#ifdef __MCMAP_DEBUG
+	fprintf(stderr,"=====after freeing: %d bytes across %d allocations=====\n",memdb_heap_size(),memdb_heap_num());
+	#endif
 	return 0;
 	}
