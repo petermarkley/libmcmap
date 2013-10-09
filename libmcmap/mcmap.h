@@ -405,6 +405,15 @@ void mcmap_chunk_free(struct mcmap_chunk *);
 // ---------------------
 // (this is the only recommended API layer)
 
+#define MCMAP_OPTIONS_SUPERFLAT "7,2x3,2"
+//acceptable values for the 'GameType' parameter in the 'level.dat' file
+enum
+	{
+	MCMAP_GAME_SURVIVAL = 0,
+	MCMAP_GAME_CREATIVE = 1,
+	MCMAP_GAME_ADVENTURE = 2
+	};
+
 struct mcmap_level_region
 	{
 	struct mcmap_region *raw; //region file in memory
@@ -449,6 +458,30 @@ struct mcmap_level //this is the big daddy that should contain everything
 //when available, in order to avoid lighting seams (no need to call this function before 'mcmap_level_write()')
 //return 0 on success and -1 on failure
 int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
+
+//allocate and initialize a level struct with the given parameters, mainly including the 'level.dat' file;
+//returns NULL on failure < http://minecraft.gamepedia.com/Level_format >
+struct mcmap_level *mcmap_level_new (
+	long int seed,       //random seed, will use 'time()' if given 0
+	const char *name,    //level name (separate from 'path')
+	const char *genname, //should be one of "default", "flat", or "largeBiomes" (case insensitive)
+	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
+		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
+	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)
+	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, or MCMAP_GAME_ADVENTURE
+	int hardcore,    //boolean flag for whether minecraft should delete the world upon the player's first death
+	int commands,    //boolean flag for whether minecraft should allow in-game cheat commands
+	int comblock,    //boolean flag for whether command blocks print to the in-game chat
+	int daycyc,      //boolean flag for whether the daylight cycles
+	int firetick,    //boolean flag for whether fire spreads or burns out
+	int mobloot,     //boolean flag for whether mobs drop loot when killed
+	int mobspawn,    //boolean flag for whether mobs spawn in the darkness
+	int tiledrops,   //boolean flag for whether blocks drop anything upon breaking
+	int keepinv,     //boolean flag for whether players keeps their inventories upon dying
+	int mobgrief,    //boolean flag for whether mobs can destroy blocks
+	int regener,     //boolean flag for whether the player's health can regenerate
+	const char *path //path to map folder on the disk
+	);
 
 //creates and returns a level struct by reading the minecraft map at the given path;
 // 'mode' should be MCMAP_PARTIAL to let the caller cherry-pick a certain portion with

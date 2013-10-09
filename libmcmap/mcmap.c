@@ -2011,6 +2011,329 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 	return 0;
 	}
 
+//allocate and initialize a level struct with the given parameters, mainly including the 'level.dat' file;
+//returns NULL on failure < http://minecraft.gamepedia.com/Level_format >
+struct mcmap_level *mcmap_level_new (
+	long int seed,       //random seed, will use 'time()' if given 0
+	const char *name,    //level name (separate from 'path')
+	const char *genname, //should be one of "default", "flat", or "largeBiomes" (case insensitive)
+	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
+		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
+	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)
+	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, or MCMAP_GAME_ADVENTURE
+	int hardcore,    //boolean flag for whether minecraft should delete the world upon the player's first death
+	int commands,    //boolean flag for whether minecraft should allow in-game cheat commands
+	int comblock,    //boolean flag for whether command blocks print to the in-game chat
+	int daycyc,      //boolean flag for whether the daylight cycles
+	int firetick,    //boolean flag for whether fire spreads or burns out
+	int mobloot,     //boolean flag for whether mobs drop loot when killed
+	int mobspawn,    //boolean flag for whether mobs spawn in the darkness
+	int tiledrops,   //boolean flag for whether blocks drop anything upon breaking
+	int keepinv,     //boolean flag for whether players keeps their inventories upon dying
+	int mobgrief,    //boolean flag for whether mobs can destroy blocks
+	int regener,     //boolean flag for whether the player's health can regenerate
+	const char *path //path to map folder on the disk
+	)
+	{
+	struct mcmap_level *l;
+	char wpath[MCMAP_MAXSTR];
+	char temp[MCMAP_MAXSTR];
+	struct nbt_tag *t, *p;
+	//perform sanity checks on the input
+	if (seed == 0)
+		seed = (long int)time(NULL);
+	if (path == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		return NULL;
+		}
+	if (name == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'name\' is NULL");
+		return NULL;
+		}
+	if (genname == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"\'genname\' is NULL");
+		return NULL;
+		}
+	
+	//allocate level...
+	if ((l = (struct mcmap_level *)calloc(1,sizeof(struct mcmap_level))) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	//store directory paths...
+	if ((l->path = (char *)calloc(strlen(path)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->path,path);
+	snprintf(wpath,MCMAP_MAXSTR,"region/");
+	if ((l->overworld.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->overworld.path,wpath);
+	snprintf(wpath,MCMAP_MAXSTR,"DIM-1/");
+	if ((l->nether.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->nether.path,wpath);
+	snprintf(wpath,MCMAP_MAXSTR,"DIM1/");
+	if ((l->end.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->end.path,wpath);
+	//prepare to handle session lock later
+	l->lock = time(NULL);
+	
+	//handle 'level.dat' file
+	if ((l->meta = nbt_child_new(NULL,NBT_COMPOUND,NULL)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (nbt_child_new(l->meta,NBT_COMPOUND,"Data") == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	//NBT format version
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_INT,"version")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_int = 19133;
+	//level name
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"LevelName")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if ((t->payload.p_string = (char *)calloc(strlen(name)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(t->payload.p_string,name);
+	//generator name
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"generatorName")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if ((t->payload.p_string = (char *)calloc(strlen(genname)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(t->payload.p_string,genname);
+	//generator options
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"generatorOptions")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (genoptions != NULL)
+		{
+		if ((t->payload.p_string = (char *)calloc(strlen(genoptions)+1,1)) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		strcpy(t->payload.p_string,genoptions);
+		}
+	//generate structures flag
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_BYTE,"MapFeatures")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_byte = (int8_t)structures;
+	//game type
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_INT,"GameType")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_int = gametype;
+	//hardcore flag
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_BYTE,"hardcore")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_byte = (int8_t)hardcore;
+	//commands flag
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_BYTE,"allowCommands")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_byte = (int8_t)commands;
+	//gamerules
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_COMPOUND,"GameRules")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	//command block flag
+	if ((p = nbt_child_new(t,NBT_STRING,"commandBlockOutput")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (comblock)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//daylight cycle flag
+	if ((p = nbt_child_new(t,NBT_STRING,"doDaylightCycle")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (daycyc)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//fire tick flag
+	if ((p = nbt_child_new(t,NBT_STRING,"doFireTick")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (firetick)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//mob loot flag
+	if ((p = nbt_child_new(t,NBT_STRING,"doMobLoot")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (mobloot)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//mob spawning flag
+	if ((p = nbt_child_new(t,NBT_STRING,"doMobSpawning")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (mobspawn)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//tile drops flag
+	if ((p = nbt_child_new(t,NBT_STRING,"doTileDrops")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (tiledrops)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//keep inventory flag
+	if ((p = nbt_child_new(t,NBT_STRING,"keepInventory")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (keepinv)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//mob griefing flag
+	if ((p = nbt_child_new(t,NBT_STRING,"mobGriefing")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (mobgrief)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	//health regeneration flag
+	if ((p = nbt_child_new(t,NBT_STRING,"naturalRegeneration")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	if (regener)
+		snprintf(temp,MCMAP_MAXSTR,"true");
+	else
+		snprintf(temp,MCMAP_MAXSTR,"false");
+	if ((p->payload.p_string = (char *)calloc(strlen(temp)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(p->payload.p_string,temp);
+	
+	return l;
+	}
+
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
 int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, const char *wpath, mcmap_mode mode, int rem)
