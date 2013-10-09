@@ -430,6 +430,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	{
 	struct mcmap_level_world overworld, nether, end; //worlds in the level
 	struct nbt_tag *meta; //interpreted 'level.dat' file
+	int32_t *spawnx, *spawny, *spawnz; //pointers to the spawn coordinates in the 'level.dat' file
 	time_t lock; //contents of 'session.lock' file upon reading the world
 	char *path; //path to minecraft map folder
 	};
@@ -459,7 +460,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 //return 0 on success and -1 on failure
 int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
 
-//allocate and initialize a level struct with the given parameters, mainly including the 'level.dat' file;
+//allocate and initialize a level struct with the given parameters, mainly including a bare-minimum 'level.dat' file;
 //returns NULL on failure < http://minecraft.gamepedia.com/Level_format >
 struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
@@ -480,6 +481,9 @@ struct mcmap_level *mcmap_level_new (
 	int keepinv,     //boolean flag for whether players keeps their inventories upon dying
 	int mobgrief,    //boolean flag for whether mobs can destroy blocks
 	int regener,     //boolean flag for whether the player's health can regenerate
+	int spawnx,      //spawn coordinates (may be changed later with 'struct mcmap_level' members 'spawnx,' 'spawny,' & 'spawnz')
+	int spawny,
+	int spawnz,
 	const char *path //path to map folder on the disk
 	);
 

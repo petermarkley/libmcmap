@@ -2011,7 +2011,7 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 	return 0;
 	}
 
-//allocate and initialize a level struct with the given parameters, mainly including the 'level.dat' file;
+//allocate and initialize a level struct with the given parameters, mainly including a bare-minimum 'level.dat' file;
 //returns NULL on failure < http://minecraft.gamepedia.com/Level_format >
 struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
@@ -2032,6 +2032,9 @@ struct mcmap_level *mcmap_level_new (
 	int keepinv,     //boolean flag for whether players keeps their inventories upon dying
 	int mobgrief,    //boolean flag for whether mobs can destroy blocks
 	int regener,     //boolean flag for whether the player's health can regenerate
+	int spawnx,      //spawn coordinates (may be changed later with 'struct mcmap_level' members 'spawnx,' 'spawny,' & 'spawnz')
+	int spawny,
+	int spawnz,
 	const char *path //path to map folder on the disk
 	)
 	{
@@ -2180,6 +2183,28 @@ struct mcmap_level *mcmap_level_new (
 		return NULL;
 		}
 	t->payload.p_byte = (int8_t)commands;
+	//spawn coordinates
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_INT,"SpawnX")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_int = (int32_t)spawnx;
+	l->spawnx = &(t->payload.p_int);
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_INT,"SpawnY")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_int = (int32_t)spawny;
+	l->spawny = &(t->payload.p_int);
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_INT,"SpawnZ")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_int = (int32_t)spawnz;
+	l->spawnz = &(t->payload.p_int);
 	//gamerules
 	if ((t = nbt_child_new(l->meta->firstchild,NBT_COMPOUND,"GameRules")) == NULL)
 		{
@@ -2478,6 +2503,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	int i;
 	FILE *f;
 	uint8_t b[8];
+	struct nbt_tag *t;
 	if (path == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
@@ -2536,6 +2562,12 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return NULL;
 		}
+	if ((t = nbt_child_find(l->meta->firstchild,NBT_INT,"SpawnX")) != NULL)
+		l->spawnx = &(t->payload.p_int);
+	if ((t = nbt_child_find(l->meta->firstchild,NBT_INT,"SpawnY")) != NULL)
+		l->spawny = &(t->payload.p_int);
+	if ((t = nbt_child_find(l->meta->firstchild,NBT_INT,"SpawnZ")) != NULL)
+		l->spawnz = &(t->payload.p_int);
 	
 	return l;
 	}
