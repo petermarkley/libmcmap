@@ -2371,7 +2371,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 			i = ret - l->lock;
 			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %d second%s",i,(i==1?"":"s"));
 			return -1;
-			}fprintf(stderr,"compared %ld with %ld\n",ret,l->lock);
+			}
 		//we're okay, now record our activity to alert other applications...
 		if (fseek(f,0,SEEK_SET) == -1)
 			{
