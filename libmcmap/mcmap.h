@@ -421,6 +421,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	{
 	struct mcmap_level_world overworld, nether, end; //worlds in the level
 	struct nbt_tag *meta; //interpreted 'level.dat' file
+	time_t lock; //contents of 'session.lock' file upon reading the world
 	char *path; //path to minecraft map folder
 	};
 //'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block

@@ -2151,8 +2151,10 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	{
 	struct mcmap_level *l;
-	char lpath[MCMAP_MAXSTR];
+	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR];
 	int i;
+	FILE *f;
+	uint8_t b[8];
 	if (path == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
@@ -2162,9 +2164,15 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	//resolve filename from map directory...
 	i = strlen(path);
 	if (i==0 || path[i-1] == '/')
+		{
 		snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",path);
+		snprintf(spath,MCMAP_MAXSTR,"%ssession.lock",path);
+		}
 	else
+		{
 		snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",path);
+		snprintf(spath,MCMAP_MAXSTR,"%s/session.lock",path);
+		}
 	//allocate level...
 	if ((l = (struct mcmap_level *)calloc(1,sizeof(struct mcmap_level))) == NULL)
 		{
@@ -2178,6 +2186,20 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		return NULL;
 		}
 	strcpy(l->path,path);
+	//obtain session lock
+	l->lock = time(NULL);
+	cswapw_64(b,l->lock);
+	if ((f = fopen(spath,"w")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",spath,strerror(errno));
+		return NULL;
+		}
+	if (fwrite(b,1,8,f) != 8)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
+		return NULL;
+		}
+	fclose(f);
 	//populate level...
 	if (_mcmap_level_world_read(l,&(l->overworld),"region/",mode,rem) == -1)
 		return NULL;
@@ -2282,8 +2304,11 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 //for whether to remember the raw data afterward; returns 0 on success and -1 on failure
 int mcmap_level_write(struct mcmap_level *l, int rem)
 	{
-	char lpath[MCMAP_MAXSTR];
+	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR];
 	int i;
+	time_t ret;
+	uint8_t b[8];
+	FILE *f;
 	if (l == NULL)
 		return 0;
 	if (l->path == NULL)
@@ -2297,6 +2322,18 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() returned %d on \'%s\'",errno,l->path);
 		return -1;
 		}
+	//resolve filenames from map directory...
+	i = strlen(l->path);
+	if (i==0 || l->path[i-1] == '/')
+		{
+		snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",l->path);
+		snprintf(spath,MCMAP_MAXSTR,"%ssession.lock",l->path);
+		}
+	else
+		{
+		snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",l->path);
+		snprintf(spath,MCMAP_MAXSTR,"%ssession.lock",l->path);
+		}
 	
 	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
 	if (mcmap_light_update(l,&(l->overworld)) == -1)
@@ -2305,6 +2342,50 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		return -1;
 	if (mcmap_light_update(l,&(l->end)) == -1)
 		return -1;
+	//check if we still have the session lock...
+	if ((f = fopen(spath,"r+")) == NULL)
+		{
+		//if the file doesn't exist, create it...
+		cswapw_64(b,l->lock);
+		if ((f = fopen(spath,"w")) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",spath,strerror(errno));
+			return -1;
+			}
+		if (fwrite(b,1,8,f) != 8)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
+			return -1;
+			}
+		}
+	else
+		{
+		//make sure the lock file doesn't show activity after our level struct was created...
+		if ((i = fread(b,1,8,f)) != 8)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),8-i,spath);
+			return -1;
+			}
+		if ((ret = cswapr_64(b)) > l->lock)
+			{
+			i = ret - l->lock;
+			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %d second%s",i,(i==1?"":"s"));
+			return -1;
+			}fprintf(stderr,"compared %ld with %ld\n",ret,l->lock);
+		//we're okay, now record our activity to alert other applications...
+		if (fseek(f,0,SEEK_SET) == -1)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fseek() on \'%s\': %s",spath,strerror(errno));
+			return -1;
+			}
+		cswapw_64(b,l->lock);
+		if (fwrite(b,1,8,f) != 8)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
+			return -1;
+			}
+		}
+	fclose(f);
 	//save chunks...
 	if (_mcmap_level_world_write(l,&(l->overworld),rem) == -1)
 		return -1;
@@ -2315,12 +2396,6 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	//write 'level.dat' file...
 	if (l->meta != NULL)
 		{
-		//resolve filename from map directory...
-		i = strlen(l->path);
-		if (i==0 || l->path[i-1] == '/')
-			snprintf(lpath,MCMAP_MAXSTR,"%slevel.dat",l->path);
-		else
-			snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",l->path);
 		//write file...
 		if (nbt_file_write(lpath,l->meta,NBT_COMPRESS_GZIP) == -1)
 			{
