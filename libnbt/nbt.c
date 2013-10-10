@@ -836,6 +836,88 @@ struct nbt_tag *nbt_separate(struct nbt_tag *t)
 	return t;
 	}
 
+//makes a copy of a tag and its children, and returns it as a separate root tag, or NULL on failure
+struct nbt_tag *nbt_copy(struct nbt_tag *i)
+	{
+	struct nbt_tag *o, *loop, **p, *t;
+	if (i != NULL)
+		{
+		if ((o = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
+			{
+			snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+			return NULL;
+			}
+		o->type = i->type;
+		//handle name
+		if (i->name != NULL)
+			{
+			if ((o->name = (char *)calloc(strlen(i->name)+1,1)) == NULL)
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+				return NULL;
+				}
+			strcpy(o->name,i->name);
+			}
+		//handle payload
+		switch (i->type)
+			{
+			case NBT_BYTE:   o->payload.p_byte   = i->payload.p_byte;   break;
+			case NBT_SHORT:  o->payload.p_short  = i->payload.p_short;  break;
+			case NBT_INT:    o->payload.p_int    = i->payload.p_int;    break;
+			case NBT_LONG:   o->payload.p_long   = i->payload.p_long;   break;
+			case NBT_FLOAT:  o->payload.p_float  = i->payload.p_float;  break;
+			case NBT_DOUBLE: o->payload.p_double = i->payload.p_double; break;
+			case NBT_BYTE_ARRAY:
+				o->payload.p_byte_array.size = i->payload.p_byte_array.size;
+				if ((o->payload.p_byte_array.data = (int8_t *)calloc(o->payload.p_byte_array.size,sizeof(int8_t))) == NULL)
+					{
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+					return NULL;
+					}
+				memcpy(o->payload.p_byte_array.data,i->payload.p_byte_array.data,i->payload.p_byte_array.size*sizeof(int8_t));
+				break;
+			case NBT_STRING:
+				if (i->payload.p_string != NULL)
+					{
+					if ((o->payload.p_string = (char *)calloc(strlen(i->payload.p_string)+1,1)) == NULL)
+						{
+						snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+						return NULL;
+						}
+					strcpy(o->payload.p_string,i->payload.p_string);
+					}
+				break;
+			case NBT_LIST: o->payload.p_list = i->payload.p_list; break;
+			case NBT_INT_ARRAY:
+				o->payload.p_int_array.size = i->payload.p_int_array.size;
+				if ((o->payload.p_int_array.data = (int32_t *)calloc(o->payload.p_int_array.size,sizeof(int32_t))) == NULL)
+					{
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+					return NULL;
+					}
+				memcpy(o->payload.p_int_array.data,i->payload.p_int_array.data,i->payload.p_int_array.size*sizeof(int32_t));
+				break;
+			default: break;
+			}
+		//handle children
+		p = &(o->firstchild);
+		for (loop = i->firstchild; loop != NULL; loop = loop->next_sib)
+			{
+			if ((p[0] = nbt_copy(loop)) == NULL)
+				return NULL;
+			p = &(p[0]->next_sib);
+			}
+		t = NULL;
+		for (loop = o->firstchild; loop != NULL; loop = loop->next_sib)
+			{
+			loop->parent = o;
+			loop->prev_sib = t;
+			t = loop;
+			}
+		}
+	return o;
+	}
+
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
 //(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *name)

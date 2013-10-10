@@ -126,6 +126,9 @@ void nbt_free(struct nbt_tag *);
 //return value can immediately be passed to 'nbt_free()' if desired: 'nbt_free(nbt_separate(tag));'
 struct nbt_tag *nbt_separate(struct nbt_tag *);
 
+//makes a copy of a tag and its children, and returns it as a separate root tag, or NULL on failure
+struct nbt_tag *nbt_copy(struct nbt_tag *);
+
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
 //(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *, nbt_tagid, const char *);

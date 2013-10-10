@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	{
 	struct mcmap_level *l;
 	
-	if ((l = mcmap_level_new(0,"My Super Test","flat","19",0,MCMAP_GAME_ADVENTURE,0,1,1,0,1,1,1,1,0,0,1,3,10,-1,OUT_MAP)) == NULL)
+	if ((l = mcmap_level_new(0,"My Super Test","flat","19",0,MCMAP_GAME_ADVENTURE,0,1,1,1,1,1,1,1,0,0,1,3,10,-1,OUT_MAP)) == NULL)
 		{
 		fprintf(stderr,"%s: %s\n",MCMAP_LIBNAME,mcmap_error);
 		return -1;

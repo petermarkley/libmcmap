@@ -1276,32 +1276,29 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if (!ishere1 || (Entities = nbt_child_find(Level,NBT_LIST,"Entities")) == NULL) //if the list is absent from the NBT struct...
 				{
-				//then we have 1 of 2 possible situations: the application pointed it to some random list in another chunk, 
-				//or the application created it from scratch, in which case it's probably a standalone root tag...
-				if (c->special->entities->parent == NULL) //standalone root tag, safe to transplant...
+				//copy it...
+				if ((Entities = nbt_copy(c->special->entities->parent)) == NULL)
 					{
-					//find a place to put it, set structure links...
-					if (Level->firstchild != NULL)
-						{
-						for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-						c->special->entities->prev_sib = loop;
-						loop->next_sib = c->special->entities;
-						}
-					else
-						Level->firstchild = c->special->entities;
-					c->special->entities->parent = Level;
+					snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+					return -1;
+					}
+				//find a place to put it, set structure links...
+				if (Level->firstchild != NULL)
+					{
+					for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+					Entities->prev_sib = loop;
+					loop->next_sib = Entities;
 					}
 				else
-					{
-					//FIXME - maybe copy?
-					}
+					Level->firstchild = Entities;
+				Entities->parent = Level;
 				}
 			else //if the list preexists in the NBT struct...
 				{
 				if (Entities->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
 					if (Entities->firstchild == NULL)
-						Entities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves an empty 'Entities' list as a list of NBT_BYTEs ... ? go figure
+						Entities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
 						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'Entities\' List was not type Compound");
@@ -1309,35 +1306,32 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						}
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
-				//otherwise we should append it to the list, preserving both in one merged list...
+				//otherwise we should append it to the list, preserving both in one merged list... (FIXME - if the application saves more than once, it'll duplicate all the entities!)
 				if (Entities != c->special->entities)
 					{
-					//assuming of course that, once again, the application didn't just point it to some random other chunk's list, and assuming this list isn't empty...
+					//assuming this list isn't empty...
 					if (c->special->entities->firstchild != NULL)
 						{
-						if (c->special->entities->parent == NULL)
+						//copy it...
+						if ((probe = nbt_copy(c->special->entities)) == NULL)
 							{
-							//find a place to put the first child...
-							if (Entities->firstchild != NULL)
-								{
-								for (loop = Entities->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-								c->special->entities->firstchild->prev_sib = loop;
-								loop->next_sib = c->special->entities->firstchild;
-								}
-							else
-								Entities->firstchild = c->special->entities->firstchild;
-							//reassign the parent for all children...
-							for (loop = c->special->entities->firstchild; loop != NULL; loop = loop->next_sib)
-								loop->parent = Entities;
-							c->special->entities->firstchild = NULL;
-							//free the now-empty old parent and reassign our list pointer...
-							nbt_free(nbt_separate(c->special->entities));
-							c->special->entities = Entities;
+							snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+							return -1;
+							}
+						//find a place to put the first child...
+						if (Entities->firstchild != NULL)
+							{
+							for (loop = Entities->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+							probe->firstchild->prev_sib = loop;
+							loop->next_sib = probe->firstchild;
 							}
 						else
-							{
-							//FIXME - maybe copy?
-							}
+							Entities->firstchild = probe->firstchild;
+						//reassign the parent for all children...
+						for (loop = probe->firstchild; loop != NULL; loop = loop->next_sib)
+							loop->parent = Entities;
+						probe->firstchild = NULL;
+						nbt_free(probe);
 						}
 					}
 				}
@@ -1346,32 +1340,29 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if (!ishere1 || (TileEntities = nbt_child_find(Level,NBT_LIST,"TileEntities")) == NULL) //if the list is absent from the NBT struct...
 				{
-				//then we have 1 of 2 possible situations: the application pointed it to some random list in another chunk, 
-				//or the application created it from scratch, in which case it's probably a standalone root tag...
-				if (c->special->tile_entities->parent == NULL) //standalone root tag, safe to transplant...
+				//copy it...
+				if ((TileEntities = nbt_copy(c->special->tile_entities->parent)) == NULL)
 					{
-					//find a place to put it, set structure links...
-					if (Level->firstchild != NULL)
-						{
-						for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-						c->special->tile_entities->prev_sib = loop;
-						loop->next_sib = c->special->tile_entities;
-						}
-					else
-						Level->firstchild = c->special->tile_entities;
-					c->special->tile_entities->parent = Level;
+					snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+					return -1;
+					}
+				//find a place to put it, set structure links...
+				if (Level->firstchild != NULL)
+					{
+					for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+					TileEntities->prev_sib = loop;
+					loop->next_sib = TileEntities;
 					}
 				else
-					{
-					//FIXME - maybe copy?
-					}
+					Level->firstchild = TileEntities;
+				TileEntities->parent = Level;
 				}
 			else //if the list preexists in the NBT struct...
 				{
 				if (TileEntities->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
 					if (TileEntities->firstchild == NULL)
-						TileEntities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves an empty 'TileEntities' list as a list of NBT_BYTEs ... ? go figure
+						TileEntities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
 						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileEntities\' List was not type Compound");
@@ -1379,35 +1370,32 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						}
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
-				//otherwise we should append it to the list, preserving both in one merged list...
+				//otherwise we should append it to the list, preserving both in one merged list... (FIXME - if the application saves more than once, it'll duplicate all the tile entities!)
 				if (TileEntities != c->special->tile_entities)
 					{
-					//assuming of course that, once again, the application didn't just point it to some random other chunk's list, and assuming this list isn't empty...
+					//assuming this list isn't empty...
 					if (c->special->tile_entities->firstchild != NULL)
 						{
-						if (c->special->tile_entities->parent == NULL)
+						//copy it...
+						if ((probe = nbt_copy(c->special->tile_entities)) == NULL)
 							{
-							//find a place to put the first child...
-							if (TileEntities->firstchild != NULL)
-								{
-								for (loop = TileEntities->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-								c->special->tile_entities->firstchild->prev_sib = loop;
-								loop->next_sib = c->special->tile_entities->firstchild;
-								}
-							else
-								TileEntities->firstchild = c->special->tile_entities->firstchild;
-							//reassign the parent for all children...
-							for (loop = c->special->tile_entities->firstchild; loop != NULL; loop = loop->next_sib)
-								loop->parent = TileEntities;
-							c->special->tile_entities->firstchild = NULL;
-							//free the now-empty old parent and reassign our list pointer...
-							nbt_free(nbt_separate(c->special->tile_entities));
-							c->special->tile_entities = TileEntities;
+							snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+							return -1;
+							}
+						//find a place to put the first child...
+						if (TileEntities->firstchild != NULL)
+							{
+							for (loop = TileEntities->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+							probe->firstchild->prev_sib = loop;
+							loop->next_sib = probe->firstchild;
 							}
 						else
-							{
-							//FIXME - maybe copy?
-							}
+							TileEntities->firstchild = probe->firstchild;
+						//reassign the parent for all children...
+						for (loop = probe->firstchild; loop != NULL; loop = loop->next_sib)
+							loop->parent = TileEntities;
+						probe->firstchild = NULL;
+						nbt_free(probe);
 						}
 					}
 				}
@@ -1416,32 +1404,29 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if (!ishere1 || (TileTicks = nbt_child_find(Level,NBT_LIST,"TileTicks")) == NULL) //if the list is absent from the NBT struct...
 				{
-				//then we have 1 of 2 possible situations: the application pointed it to some random list in another chunk, 
-				//or the application created it from scratch, in which case it's probably a standalone root tag...
-				if (c->special->tile_ticks->parent == NULL) //standalone root tag, safe to transplant...
+				//copy it...
+				if ((TileTicks = nbt_copy(c->special->tile_ticks->parent)) == NULL)
 					{
-					//find a place to put it, set structure links...
-					if (Level->firstchild != NULL)
-						{
-						for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-						c->special->tile_ticks->prev_sib = loop;
-						loop->next_sib = c->special->tile_ticks;
-						}
-					else
-						Level->firstchild = c->special->tile_ticks;
-					c->special->tile_ticks->parent = Level;
+					snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+					return -1;
+					}
+				//find a place to put it, set structure links...
+				if (Level->firstchild != NULL)
+					{
+					for (loop = Level->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+					TileTicks->prev_sib = loop;
+					loop->next_sib = TileTicks;
 					}
 				else
-					{
-					//FIXME - maybe copy?
-					}
+					Level->firstchild = TileTicks;
+				TileTicks->parent = Level;
 				}
 			else //if the list preexists in the NBT struct...
 				{
 				if (TileTicks->payload.p_list != NBT_COMPOUND) //then it shouldn't be the wrong list type...
 					{
 					if (TileTicks->firstchild == NULL)
-						TileTicks->payload.p_list = NBT_COMPOUND;
+						TileTicks->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
 						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileTicks\' List was not type Compound");
@@ -1449,35 +1434,32 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						}
 					}
 				//if we've just rediscovered the same memory space the chunk is pointing to, then to heck with it;
-				//otherwise we should append it to the list, preserving both in one merged list...
+				//otherwise we should append it to the list, preserving both in one merged list... (FIXME - if the application saves more than once, it'll duplicate all the tile ticks!)
 				if (TileTicks != c->special->tile_ticks)
 					{
-					//assuming of course that, once again, the application didn't just point it to some random other chunk's list, and assuming this list isn't empty...
+					//assuming this list isn't empty...
 					if (c->special->tile_ticks->firstchild != NULL)
 						{
-						if (c->special->tile_ticks->parent == NULL)
+						//copy it...
+						if ((probe = nbt_copy(c->special->tile_ticks)) == NULL)
 							{
-							//find a place to put the first child...
-							if (TileTicks->firstchild != NULL)
-								{
-								for (loop = TileTicks->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
-								c->special->tile_ticks->firstchild->prev_sib = loop;
-								loop->next_sib = c->special->tile_ticks->firstchild;
-								}
-							else
-								TileTicks->firstchild = c->special->tile_ticks->firstchild;
-							//reassign the parent for all children...
-							for (loop = c->special->tile_ticks->firstchild; loop != NULL; loop = loop->next_sib)
-								loop->parent = TileTicks;
-							c->special->tile_ticks->firstchild = NULL;
-							//free the now-empty old parent and reassign our list pointer...
-							nbt_free(nbt_separate(c->special->tile_ticks));
-							c->special->tile_ticks = TileTicks;
+							snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+							return -1;
+							}
+						//find a place to put the first child...
+						if (TileTicks->firstchild != NULL)
+							{
+							for (loop = TileTicks->firstchild; loop->next_sib != NULL; loop = loop->next_sib);
+							probe->firstchild->prev_sib = loop;
+							loop->next_sib = probe->firstchild;
 							}
 						else
-							{
-							//FIXME - maybe copy?
-							}
+							TileTicks->firstchild = probe->firstchild;
+						//reassign the parent for all children...
+						for (loop = probe->firstchild; loop != NULL; loop = loop->next_sib)
+							loop->parent = TileTicks;
+						probe->firstchild = NULL;
+						nbt_free(probe);
 						}
 					}
 				}
@@ -1607,8 +1589,6 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 	{
 	if (c != NULL)
 		{
-		if (c->raw != NULL)
-			nbt_free(c->raw);
 		if (c->geom != NULL)
 			free(c->geom);
 		if (c->light != NULL)
@@ -1616,7 +1596,17 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		if (c->meta != NULL)
 			free(c->meta);
 		if (c->special != NULL)
+			{
+			if (c->special->entities != NULL)
+				nbt_free(nbt_separate(c->special->entities));
+			if (c->special->tile_entities != NULL)
+				nbt_free(nbt_separate(c->special->tile_entities));
+			if (c->special->tile_ticks != NULL)
+				nbt_free(nbt_separate(c->special->tile_ticks));
 			free(c->special);
+			}
+		if (c->raw != NULL)
+			nbt_free(c->raw);
 		free(c);
 		}
 	return;
@@ -2596,7 +2586,7 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 	//make sure directory exists
 	if (mkdir(fpath,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() returned %d on \'%s\'",errno,fpath);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on \'%s\': %s",fpath,strerror(errno));
 		return -1;
 		}
 	
@@ -2674,7 +2664,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	//make sure directory exists
 	if (mkdir(l->path,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() returned %d on \'%s\'",errno,l->path);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on \'%s\': %s",l->path,strerror(errno));
 		return -1;
 		}
 	//resolve filenames from map directory...
