@@ -8,8 +8,7 @@
 	#include "./memdb.h"
 #endif
 
-#define INP_MAP "./test_map/saves/New World/"
-#define OUT_MAP "./test_map/saves/New World 2/"
+#define OUT_MAP "./test_map/New World 2/"
 #define MAX_STR 1024
 
 int main(int argc, char **argv)
