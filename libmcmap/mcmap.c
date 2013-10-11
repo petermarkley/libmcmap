@@ -2106,6 +2106,13 @@ struct mcmap_level *mcmap_level_new (
 		return NULL;
 		}
 	t->payload.p_int = 19133;
+	//random seed
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_LONG,"RandomSeed")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_long = seed;
 	//level name
 	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"LevelName")) == NULL)
 		{
