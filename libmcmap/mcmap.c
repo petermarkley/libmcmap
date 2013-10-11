@@ -2125,6 +2125,13 @@ struct mcmap_level *mcmap_level_new (
 		return NULL;
 		}
 	strcpy(t->payload.p_string,name);
+	//handle modify timestamp
+	if ((t = nbt_child_new(l->meta->firstchild,NBT_LONG,"LastPlayed")) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
+		return NULL;
+		}
+	t->payload.p_long = (int64_t)time(NULL); //FIXME - Minecraft is using a date format currently on 13 digits, while this is yielding only 10 - Minecraft interprets it as sometime in the year 1970.
 	//generator name
 	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"generatorName")) == NULL)
 		{
@@ -2661,6 +2668,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	time_t ret;
 	uint8_t b[8];
 	FILE *f;
+	struct nbt_tag *t;
 	if (l == NULL)
 		return 0;
 	if (l->path == NULL)
@@ -2748,6 +2756,9 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	//write 'level.dat' file...
 	if (l->meta != NULL)
 		{
+		//update timestamp...
+		if ((t = nbt_child_find(l->meta->firstchild,NBT_LONG,"LastPlayed")) != NULL)
+			t->payload.p_long = (int64_t)time(NULL); //FIXME - Minecraft is using a date format currently on 13 digits, while this is yielding only 10 - Minecraft interprets it as sometime in the year 1970.
 		//write file...
 		if (nbt_file_write(lpath,l->meta,NBT_COMPRESS_GZIP) == -1)
 			{
