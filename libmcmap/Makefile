@@ -1,11 +1,19 @@
-CMODULES=mcmap.c test.c
-DMODULES=memdb.c
-CFLAGS=-lz -lm -lnbt -L../libnbt/ -I../libnbt/
-DFLAGS=-D __MCMAP_DEBUG -D __NBT_DEBUG
-APPLICATION=test
+CFLAGS=-g -Wall
+DFLAGS=-D __MCMAP_DEBUG
+PPOPTS=-I../libnbt/
+LNOPTS=-lz -lm -lnbt -L../libnbt/
 
-all:
-	cc -g -Wall -o $(APPLICATION) $(CMODULES) $(CFLAGS) 
+all: libmcmap.a
+	cc -o test test.c libmcmap.a $(CFLAGS) $(DFLAGS) $(PPOPTS) $(LNOPTS)
 
-debug:
-	cc -g -Wall -o $(APPLICATION) $(DMODULES) $(CMODULES) $(CFLAGS) $(DFLAGS)
+clean:
+	rm -f *.a *.o test
+
+libmcmap.a: mcmap.o memdb.o
+	ar -rcs libmcmap.a mcmap.o memdb.o
+
+mcmap.o: mcmap.c mcmap.h
+	cc -c mcmap.c $(CFLAGS) $(DFLAGS) $(PPOPTS)
+
+memdb.o: memdb.c memdb.h
+	cc -c memdb.c $(CFLAGS) $(DFLAGS)
