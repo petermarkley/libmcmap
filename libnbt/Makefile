@@ -5,19 +5,11 @@ DDEP=memdb.c memdb.h
 
 all: libnbt.a
 
-debug: libnbt.a_d
-
 clean:
-	rm *.a *.o
+	rm -f *.a *.o
 
-libnbt.a: nbt.o
-	ar -rcs libnbt.a nbt.o
-
-libnbt.a_d: nbt.o_d
+libnbt.a: nbt.o memdb.o
 	ar -rcs libnbt.a nbt.o memdb.o
 
-nbt.o: $(DEP)
-	cc -c nbt.c $(CFLAGS)
-
-nbt.o_d: $(DEP) $(DDEP)
+nbt.o: $(DEP) $(DDEP)
 	cc -c nbt.c memdb.c $(CFLAGS) $(DFLAGS)
