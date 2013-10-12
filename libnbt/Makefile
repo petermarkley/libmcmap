@@ -1,4 +1,4 @@
-CFLAGS=-Wall
+CFLAGS=-g -Wall
 DFLAGS=-D __NBT_DEBUG
 DEP=nbt.c nbt.h
 DDEP=memdb.c memdb.h
