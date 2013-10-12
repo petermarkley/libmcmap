@@ -2086,7 +2086,7 @@ struct mcmap_level *mcmap_level_new (
 		}
 	strcpy(l->end.path,wpath);
 	//prepare to handle session lock later
-	l->lock = time(NULL);
+	l->lock = time(NULL)*1000;
 	
 	//handle 'level.dat' file
 	if ((l->meta = nbt_child_new(NULL,NBT_COMPOUND,NULL)) == NULL)
@@ -2730,7 +2730,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		if ((ret = cswapr_64(b)) > l->lock)
 			{
 			i = ret - l->lock;
-			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %d second%s",i,(i==1?"":"s"));
+			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %d millisecond%s",i,(i==1?"":"s"));
 			return -1;
 			}
 		//we're okay, now record our activity to alert other applications...
