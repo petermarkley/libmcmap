@@ -37,7 +37,7 @@
 #include <math.h>
 #include <time.h>
 #include "mcmap.h"
-#include "libnbt/nbt.h"
+#include "nbt.h"
 #include "cswap.h"
 #ifdef __MCMAP_DEBUG
 	#include "memdb.h"

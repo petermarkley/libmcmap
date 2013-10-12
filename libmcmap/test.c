@@ -2,10 +2,10 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
-#include "./mcmap.h"
-#include "./libnbt/nbt.h"
+#include "mcmap.h"
+#include "nbt.h"
 #ifdef __MCMAP_DEBUG
-	#include "./memdb.h"
+	#include "memdb.h"
 #endif
 
 #define OUT_MAP "./maps/My Super Test/"

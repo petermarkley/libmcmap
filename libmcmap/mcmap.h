@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
-#include "libnbt/nbt.h"
+#include "nbt.h"
 
 #define MCMAP_LIBNAME "libmcmap"
 #define MCMAP_MAXSTR 4096
