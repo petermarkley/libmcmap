@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 			{
 			for (x=-40;x<40;x++)
 				{
-				if (mcmap_get_block(&(l->overworld),x,y,z) == MCMAP_DIRT && mcmap_get_block(&(l->overworld),x,y+1,z) == MCMAP_AIR)
+				if (mcmap_get_block(&(l->overworld),x,y,z) == MCMAP_DIRT && (mcmap_get_block(&(l->overworld),x,y+1,z) == MCMAP_AIR || mcmap_get_block(&(l->overworld),x,y+1,z) == MCMAP_TALL_GRASS))
 					{
 					mcmap_set_block(&(l->overworld),x,y,z,MCMAP_GRASS);
 					mcmap_set_block(&(l->overworld),x,y+1,z,MCMAP_TALL_GRASS);

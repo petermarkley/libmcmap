@@ -2131,7 +2131,7 @@ struct mcmap_level *mcmap_level_new (
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return NULL;
 		}
-	t->payload.p_long = (int64_t)time(NULL); //FIXME - Minecraft is using a date format currently on 13 digits, while this is yielding only 10 - Minecraft interprets it as sometime in the year 1970.
+	t->payload.p_long = (int64_t)time(NULL)*1000;
 	//generator name
 	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"generatorName")) == NULL)
 		{
@@ -2540,7 +2540,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		}
 	strcpy(l->path,path);
 	//obtain session lock
-	l->lock = time(NULL);
+	l->lock = time(NULL)*1000;
 	cswapw_64(b,l->lock);
 	if ((f = fopen(spath,"w")) == NULL)
 		{
@@ -2631,6 +2631,7 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 						//update the timestamps
 						if ((t = time(NULL)) != -1)
 							{
+							t = t*1000;
 							if (c->meta != NULL)
 								c->meta->mtime = t;
 							w->regions[rz][rx]->raw->dates[cz][cx] = t;
@@ -2738,6 +2739,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 			snprintf(mcmap_error,MCMAP_MAXSTR,"fseek() on \'%s\': %s",spath,strerror(errno));
 			return -1;
 			}
+		l->lock = time(NULL)*1000;
 		cswapw_64(b,l->lock);
 		if (fwrite(b,1,8,f) != 8)
 			{
@@ -2758,7 +2760,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		{
 		//update timestamp...
 		if ((t = nbt_child_find(l->meta->firstchild,NBT_LONG,"LastPlayed")) != NULL)
-			t->payload.p_long = (int64_t)time(NULL); //FIXME - Minecraft is using a date format currently on 13 digits, while this is yielding only 10 - Minecraft interprets it as sometime in the year 1970.
+			t->payload.p_long = (int64_t)time(NULL)*1000;
 		//write file...
 		if (nbt_file_write(lpath,l->meta,NBT_COMPRESS_GZIP) == -1)
 			{
