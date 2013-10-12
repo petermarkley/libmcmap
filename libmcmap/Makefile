@@ -4,6 +4,8 @@ PPOPTS=-I../libnbt/
 LNOPTS=-lz -lm -lnbt -L../libnbt/
 
 all: libmcmap.a
+
+test: libmcmap.a
 	cc -o test test.c libmcmap.a $(CFLAGS) $(DFLAGS) $(PPOPTS) $(LNOPTS)
 
 clean:
