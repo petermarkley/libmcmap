@@ -35,6 +35,12 @@
 #ifndef __LIBNBT_HEADER
 #define __LIBNBT_HEADER
 
+#ifdef __cplusplus
+// "__cplusplus" is defined whenever it's a C++ compiler,
+// not a C compiler, that is doing the compiling.
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 
@@ -146,4 +152,7 @@ void nbt_print_ascii(FILE *, struct nbt_tag *, int maxlines, int width);
 //return 0 if good and -1 if bad
 int nbt_memcheck(struct nbt_tag *);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

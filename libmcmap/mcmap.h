@@ -38,6 +38,12 @@
 #define MCMAP_LIBNAME "libmcmap"
 #define MCMAP_MAXSTR 4096
 
+#ifdef __cplusplus
+// "__cplusplus" is defined whenever it's a C++ compiler,
+// not a C compiler, that is doing the compiling.
+extern "C" {
+#endif
+
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
 
 // -------------------------------------------------------------------------------------
@@ -517,4 +523,7 @@ int mcmap_prime_rect(struct mcmap_level *, struct mcmap_level_world *, int x1, i
 //call 'mcmap_prime_single()' for all blocks in the circle with the given center and radius; return 0 on success and -1 on failure
 int mcmap_prime_circle(struct mcmap_level *, struct mcmap_level_world *, int x, int z, double radius, mcmap_mode mode, int rem, int create);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

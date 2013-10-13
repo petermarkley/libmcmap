@@ -1,6 +1,12 @@
 #ifndef __MEMDB_HEADER
 #define __MEMDB_HEADER
 
+#ifdef __cplusplus
+// "__cplusplus" is defined whenever it's a C++ compiler,
+// not a C compiler, that is doing the compiling.
+extern "C" {
+#endif
+
 #undef malloc
 #undef calloc
 #undef realloc
@@ -25,4 +31,7 @@ int memdb_heap_size(void);
 //return total number of allocations
 int memdb_heap_num(void);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
