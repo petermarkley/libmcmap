@@ -305,7 +305,7 @@ struct mcmap_region_chunk
 struct mcmap_region
 	{
 	struct mcmap_region_header *header; //to point at a new RAM copy of the file header
-	time_t dates[32][32]; //parsed copies of 32-bit integers at header->dates[z][x]
+	int32_t dates[32][32]; //parsed copies of 32-bit integers at header->dates[z][x]
 	uint32_t locations[32][32]; //parsed copies of 24-bit integers at header->locations[z][x].offset
 	struct mcmap_region_chunk chunks[32][32]; //per-chunk navigation nodes, also in [Z][X] order
 	
@@ -437,7 +437,7 @@ struct mcmap_level //this is the big daddy that should contain everything
 	struct mcmap_level_world overworld, nether, end; //worlds in the level
 	struct nbt_tag *meta; //interpreted 'level.dat' file
 	int32_t *spawnx, *spawny, *spawnz; //pointers to the spawn coordinates in the 'level.dat' file
-	time_t lock; //contents of 'session.lock' file upon reading the world
+	int64_t lock; //contents of 'session.lock' file upon reading the world
 	char *path; //path to minecraft map folder
 	};
 //'overworld.regions[0][0]->chunks[0][0]->geom->blocks[64][0][0]' selects a block

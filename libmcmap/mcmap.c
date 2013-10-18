@@ -2086,7 +2086,7 @@ struct mcmap_level *mcmap_level_new (
 		}
 	strcpy(l->end.path,wpath);
 	//prepare to handle session lock later
-	l->lock = time(NULL)*1000;
+	l->lock = ((int64_t)time(NULL))*1000;
 	
 	//handle 'level.dat' file
 	if ((l->meta = nbt_child_new(NULL,NBT_COMPOUND,NULL)) == NULL)
@@ -2131,7 +2131,7 @@ struct mcmap_level *mcmap_level_new (
 		snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 		return NULL;
 		}
-	t->payload.p_long = (int64_t)time(NULL)*1000;
+	t->payload.p_long = ((int64_t)time(NULL))*1000;
 	//generator name
 	if ((t = nbt_child_new(l->meta->firstchild,NBT_STRING,"generatorName")) == NULL)
 		{
@@ -2505,8 +2505,6 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	struct mcmap_level *l;
 	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR];
 	int i;
-	FILE *f;
-	uint8_t b[8];
 	struct nbt_tag *t;
 	if (path == NULL)
 		{
@@ -2540,19 +2538,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		}
 	strcpy(l->path,path);
 	//obtain session lock
-	l->lock = time(NULL)*1000;
-	cswapw_64(b,l->lock);
-	if ((f = fopen(spath,"w")) == NULL)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",spath,strerror(errno));
-		return NULL;
-		}
-	if (fwrite(b,1,8,f) != 8)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
-		return NULL;
-		}
-	fclose(f);
+	l->lock = ((int64_t)time(NULL))*1000;
 	//populate level...
 	if (_mcmap_level_world_read(l,&(l->overworld),"region/",mode,rem) == -1)
 		return NULL;
@@ -2628,14 +2614,9 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 									return -1;
 								}
 							}
-						//update the timestamps
+						//update the timestamp
 						if ((t = time(NULL)) != -1)
-							{
-							t = t*1000;
-							if (c->meta != NULL)
-								c->meta->mtime = t;
 							w->regions[rz][rx]->raw->dates[cz][cx] = t;
-							}
 						//save the chunk
 						if (mcmap_chunk_write(w->regions[rz][rx]->raw,cx,cz,c,rem) == -1)
 							return -1;
@@ -2665,8 +2646,8 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 int mcmap_level_write(struct mcmap_level *l, int rem)
 	{
 	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR];
-	int i;
-	time_t ret;
+	int64_t i;
+	int64_t ret;
 	uint8_t b[8];
 	FILE *f;
 	struct nbt_tag *t;
@@ -2724,13 +2705,13 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		//make sure the lock file doesn't show activity after our level struct was created...
 		if ((i = fread(b,1,8,f)) != 8)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),8-i,spath);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),8-(int)i,spath);
 			return -1;
 			}
 		if ((ret = cswapr_64(b)) > l->lock)
 			{
 			i = ret - l->lock;
-			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %d millisecond%s",i,(i==1?"":"s"));
+			snprintf(mcmap_error,MCMAP_MAXSTR,"session lock was taken by another application after %ld millisecond%s",(long)i,(i==1?"":"s"));
 			return -1;
 			}
 		//we're okay, now record our activity to alert other applications...
