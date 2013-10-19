@@ -2674,7 +2674,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	else
 		{
 		snprintf(lpath,MCMAP_MAXSTR,"%s/level.dat",l->path);
-		snprintf(spath,MCMAP_MAXSTR,"%ssession.lock",l->path);
+		snprintf(spath,MCMAP_MAXSTR,"%s/session.lock",l->path);
 		}
 	
 	//avoid lighting glitches from changes to the geometry, since removing it only CRASHES minecraft instead of forcing a lighting update in-game
