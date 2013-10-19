@@ -1,15 +1,15 @@
-CFLAGS=-g -Wall
+CFLAGS=-g -Wall -lz
 DFLAGS=-D __NBT_DEBUG
 DEP=nbt.c nbt.h
 DDEP=memdb.c memdb.h
 
-all: libnbt.a
+all: libnbt.so
 
 clean:
-	rm -f *.a *.o
+	rm -f *.so *.o
 
-libnbt.a: nbt.o memdb.o
-	ar -rcs libnbt.a nbt.o memdb.o
+libnbt.so: nbt.o memdb.o
+	cc -shared -o libnbt.so nbt.o memdb.o $(CFLAGS)
 
 nbt.o: $(DEP) $(DDEP)
 	cc -c nbt.c memdb.c $(CFLAGS)

@@ -1,21 +1,20 @@
 CFLAGS=-g -Wall
 DFLAGS=-D __MCMAP_DEBUG
-PPOPTS=-I../libnbt/
-LNOPTS=-lz -lm -lnbt -L../libnbt/
+LFLAGS=-lz -lm -lnbt
 
-all: libmcmap.a
+all: libmcmap.so
 
-test: libmcmap.a test.c
-	cc -o test test.c libmcmap.a $(CFLAGS) $(PPOPTS) $(LNOPTS)
+test: libmcmap.so test.c
+	cc -o test test.c libmcmap.so $(CFLAGS) $(LFLAGS)
 
 clean:
-	rm -f *.a *.o test
+	rm -f *.so *.o test
 
-libmcmap.a: mcmap.o memdb.o
-	ar -rcs libmcmap.a mcmap.o memdb.o
+libmcmap.so: mcmap.o memdb.o
+	cc -shared -o libmcmap.so mcmap.o memdb.o $(CFLAGS) $(LFLAGS)
 
 mcmap.o: mcmap.c mcmap.h
-	cc -c mcmap.c $(CFLAGS) $(PPOPTS)
+	cc -c mcmap.c $(CFLAGS)
 
 memdb.o: memdb.c memdb.h
 	cc -c memdb.c $(CFLAGS)
