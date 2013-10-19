@@ -2,13 +2,20 @@ CFLAGS=-g -Wall
 DFLAGS=-D __MCMAP_DEBUG
 LFLAGS=-lz -lm -lnbt
 
-all: libmcmap.so
+all:
+	@echo Please use either \'make osx\' or \'make linux\'
 
-test: libmcmap.so test.c
-	cc -o test test.c libmcmap.so $(CFLAGS) $(LFLAGS)
+osx: libmcmap.dylib test
+linux: libmcmap.so test
 
 clean:
-	rm -f *.so *.o test
+	rm -rf *.so *.dylib *.o test test.dSYM
+
+test: test.c
+	cc -o test test.c libmcmap.* $(CFLAGS) $(LFLAGS)
+
+libmcmap.dylib: mcmap.o memdb.o
+	cc -dynamiclib -o libmcmap.dylib mcmap.o memdb.o $(CFLAGS) $(LFLAGS)
 
 libmcmap.so: mcmap.o memdb.o
 	cc -shared -o libmcmap.so mcmap.o memdb.o $(CFLAGS) $(LFLAGS)

@@ -1,15 +1,23 @@
-CFLAGS=-g -Wall -lz
+CFLAGS=-g -Wall
 DFLAGS=-D __NBT_DEBUG
+LFLAGS=-lz
 DEP=nbt.c nbt.h
 DDEP=memdb.c memdb.h
 
-all: libnbt.so
+all:
+	@echo Please use either \'make osx\' or \'make linux\'
+
+osx: libnbt.dylib
+linux: libnbt.so
 
 clean:
-	rm -f *.so *.o
+	rm -f *.so *.dylib *.o
+
+libnbt.dylib: nbt.o memdb.o
+	cc -dynamiclib -o libnbt.dylib nbt.o memdb.o $(CFLAGS) $(LFLAGS)
 
 libnbt.so: nbt.o memdb.o
-	cc -shared -o libnbt.so nbt.o memdb.o $(CFLAGS)
+	cc -shared -o libnbt.so nbt.o memdb.o $(CFLAGS) $(LFLAGS)
 
 nbt.o: $(DEP) $(DDEP)
 	cc -c nbt.c memdb.c $(CFLAGS)
