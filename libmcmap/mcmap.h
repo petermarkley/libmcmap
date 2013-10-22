@@ -386,7 +386,7 @@ struct mcmap_chunk
 	struct mcmap_chunk_meta    *meta;
 	struct mcmap_chunk_special *special;
 
-	int32_t x,z; //per-region chunk coordinates (should be >= 0, and < 32)
+	int32_t x,z; //global chunk coordinates
 	
 	struct nbt_tag *raw; //optionally retain stage-4 NBT structure
 	};

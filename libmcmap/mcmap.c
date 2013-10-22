@@ -391,7 +391,7 @@ int _mcmap_region_chunk_check(struct mcmap_region *r, int x, int z)
 	//in fact neither should it be larger than the sector count in the file header
 	if (r->chunks[z][x].size+5 > r->header->locations[z][x].sector_count*4096)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed to be %u bytes, which exceeds the %u bytes designated in the header",x,z,(unsigned int)r->chunks[z][x].size,r->header->locations[z][x].sector_count*4096);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed region: chunk (%d,%d) was listed to be %u bytes, which exceeds the %u bytes designated in the header",x,z,(unsigned int)r->chunks[z][x].size+5,r->header->locations[z][x].sector_count*4096);
 		return -1;
 		}
 	return 0;
@@ -597,7 +597,7 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 	return;
 	}
 
-//allocate a chunk and record the given per-region chunk coordinates; 'mode' should be MCMAP_PARTIAL
+//allocate a chunk and record the given global chunk coordinates; 'mode' should be MCMAP_PARTIAL
 //to only create geometry and chunk metadata, MCMAP_FULL to create everything; returns NULL on failure
 struct mcmap_chunk *mcmap_chunk_new(int x, int z, mcmap_mode mode)
 	{
@@ -1475,10 +1475,9 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 	{
 	uint8_t *b = NULL;
 	uint8_t *m = (uint8_t *)r->header;
-	int s, i, d, lx,lz, f, e;
+	int s, sc, i, d, lx,lz, f, e;
 	
 	//save native chunk data to the raw NBT structure
-	//c->x = x; c->z = z;
 	if (_mcmap_chunk_nbt_save(c) != 0)
 		return -1;
 	
@@ -1495,9 +1494,10 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 		}
 	
 	//negotiate a place for the memory buffer in the 'mcmap_region' struct, and save the buffer there
-	d = (int)ceil(((double)s)/4096.0) - r->header->locations[z][x].sector_count;
-	e = (int)ceil(((double)r->size)/4096.0);
-	r->header->locations[z][x].sector_count = (uint8_t)((int)ceil(((double)s)/4096.0));
+	sc = (int)ceil(((double)(s+5))/4096.0);
+	d  = sc - r->header->locations[z][x].sector_count;
+	e  = (int)ceil(((double)r->size)/4096.0);
+	r->header->locations[z][x].sector_count = (uint8_t)sc;
 	if (r->chunks[z][x].header != NULL) //chunk already exists
 		{
 		//make sure there's the right amount of space for it
