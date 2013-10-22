@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#define __NBT_EXTERN
 #include "nbt.h"
 #include "cswap.h"
 #ifdef __NBT_DEBUG

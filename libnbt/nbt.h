@@ -32,8 +32,8 @@
 // 
 //---------------------------------------------------------------------
 
-#ifndef __LIBNBT_HEADER
-#define __LIBNBT_HEADER
+#ifndef __NBT_HEADER
+#define __NBT_HEADER
 
 #ifdef __cplusplus
 // "__cplusplus" is defined whenever it's a C++ compiler,
@@ -47,7 +47,11 @@ extern "C" {
 #define NBT_LIBNAME "libnbt"
 #define NBT_MAXSTR 2048
 
+#ifndef __NBT_EXTERN
+extern char nbt_error[NBT_MAXSTR];
+#else
 char nbt_error[NBT_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
+#endif
 
 typedef enum //tag type
 	{

@@ -44,7 +44,11 @@
 extern "C" {
 #endif
 
+#ifndef __MCMAP_EXTERN
+extern char mcmap_error[MCMAP_MAXSTR];
+#else
 char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated with a detailed human-readable message
+#endif
 
 // -------------------------------------------------------------------------------------
 // recommended API layer is at the bottom of the document, under "level-wide processing"

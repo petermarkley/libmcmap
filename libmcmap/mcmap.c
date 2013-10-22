@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
+#define __MCMAP_EXTERN
 #include "mcmap.h"
 #include "nbt.h"
 #include "cswap.h"
