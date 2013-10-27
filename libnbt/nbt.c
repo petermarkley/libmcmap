@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------
 //                         libnbt
 //   Parsing and encoding the Minecraft Named Binary Tag format
-//       < http://www.minecraftwiki.net/wiki/NBT_format >
+//       < http://minecraft.gamepedia.com/NBT_format >
 // 
 // Written by and Copyright 2013 Peter Markley <quartz@malexmedia.net>
 // Distributed under the terms of the GNU General Public License.

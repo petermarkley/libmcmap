@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------
 //                         libmcmap
 //               Minecraft map reading & writing
-//      < http://www.minecraftwiki.net/wiki/Level_Format >
+//      < http://minecraft.gamepedia.com/Level_Format >
 // 
 // Written by and Copyright 2013 Peter Markley <quartz@malexmedia.net>
 // Distributed under the terms of the GNU General Public License.
@@ -58,7 +58,7 @@ char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated wi
 // general definitions
 // -------------------
 
-//minecraft 1.6.2 data values < http://www.minecraftwiki.net/wiki/Data_values >
+//minecraft 1.7.2 data values < http://minecraft.gamepedia.com/Data_values >
 //library does not entirely rely on block definitions being complete
 typedef enum
 	{
@@ -100,7 +100,7 @@ typedef enum
 	MCMAP_WOOL                      =  35,
 	MCMAP_MOVED_BY_PISTON           =  36,
 	MCMAP_DANDELION                 =  37,
-	MCMAP_ROSE                      =  38,
+	MCMAP_POPPY                     =  38,
 	MCMAP_BROWN_MUSHROOM            =  39,
 	MCMAP_RED_MUSHROOM              =  40,
 	MCMAP_GOLD_BLOCK                =  41,
@@ -157,7 +157,7 @@ typedef enum
 	MCMAP_PLACED_CAKE               =  92,
 	MCMAP_UNLIT_REDSTONE_REPEATER   =  93,
 	MCMAP_LIT_REDSTONE_REPEATER     =  94,
-	MCMAP_LOCKED_CHEST              =  95,
+	MCMAP_STAINED_GLASS             =  95,
 	MCMAP_TRAPDOOR                  =  96,
 	MCMAP_SILVERFISH_EGG            =  97,
 	MCMAP_STONE_BRICKS              =  98,
@@ -211,8 +211,8 @@ typedef enum
 	MCMAP_TRAPPED_CHEST             = 146,
 	MCMAP_LIGHT_PRESSURE_PLATE      = 147,
 	MCMAP_HEAVY_PRESSURE_PLATE      = 148,
-	MCMAP_UNLIT_REDSTONE_COMPARATOR = 149,
-	MCMAP_LIT_REDSTONE_COMPARATOR   = 150,
+	MCMAP_REDSTONE_COMPARATOR       = 149,
+	                               // 150,
 	MCMAP_DAYLIGHT_SENSOR           = 151,
 	MCMAP_REDSTONE_BLOCK            = 152,
 	MCMAP_NETHER_QUARTZ_ORE         = 153,
@@ -222,11 +222,11 @@ typedef enum
 	MCMAP_ACTIVATOR_RAIL            = 157,
 	MCMAP_DROPPER                   = 158,
 	MCMAP_STAINED_CLAY              = 159,
-	                               // 160,
-	                               // 161,
-	                               // 162,
-	                               // 163,
-	                               // 164,
+	MCMAP_STAINED_GLASS_PANE        = 160,
+	MCMAP_LEAVES_2                  = 161,
+	MCMAP_WOOD_2                    = 162,
+	MCMAP_ACACIA_WOOD_STAIRS        = 163,
+	MCMAP_DARK_OAK_WOOD_STAIRS      = 164,
 	                               // 165,
 	                               // 166,
 	                               // 167,
@@ -235,7 +235,9 @@ typedef enum
 	MCMAP_HAY_BLOCK                 = 170,
 	MCMAP_CARPET                    = 171,
 	MCMAP_HARDENED_CLAY             = 172,
-	MCMAP_COAL_BLOCK                = 173
+	MCMAP_COAL_BLOCK                = 173,
+	MCMAP_PACKED_ICE                = 174,
+	MCMAP_DOUBLE_PLANT              = 175
 	} mcmap_blockid;
 typedef enum
 	{
@@ -268,13 +270,13 @@ typedef enum
 
 // map data scheme, to be read in 5 stages:
 // ----------------------------------------
-//		1) anvil (.rca) region format < http://www.minecraftwiki.net/wiki/Region_file_format >
+//		1) anvil (.rca) region format < http://minecraft.gamepedia.com/Region_file_format >
 //	--extract--
 //		2) individual compressed chunk
 //	--uncompress--
-//		3) NBT format < http://www.minecraftwiki.net/wiki/NBT_format >
+//		3) NBT format < http://minecraft.gamepedia.com/NBT_format >
 //	--parse--
-//		4) NBT-based memory structure < http://www.minecraftwiki.net/wiki/Chunk_format >
+//		4) NBT-based memory structure < http://minecraft.gamepedia.com/Chunk_format >
 //	--parse--
 //		5) minecraft-based memory structure
 

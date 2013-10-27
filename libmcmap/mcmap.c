@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------
 //                         libmcmap
 //               Minecraft map reading & writing
-//      < http://www.minecraftwiki.net/wiki/Level_Format >
+//      < http://minecraft.gamepedia.com/Level_Format >
 // 
 // Written by and Copyright 2013 Peter Markley <quartz@malexmedia.net>
 // Distributed under the terms of the GNU General Public License.
@@ -210,7 +210,6 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 		case MCMAP_JACK_O_LANTERN:
 		case MCMAP_FLOWING_LAVA:
 		case MCMAP_LAVA:
-		case MCMAP_LOCKED_CHEST:
 		case MCMAP_LIT_REDSTONE_LAMP:
 			return 0x0f; //light level 15
 			break;
@@ -225,7 +224,7 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 			break;
 		case MCMAP_GLOWING_REDSTONE_ORE:
 		case MCMAP_LIT_REDSTONE_REPEATER:
-		case MCMAP_LIT_REDSTONE_COMPARATOR:
+		case MCMAP_REDSTONE_COMPARATOR: //this is wrong if the comparator is unlit, but there's not much we can do and the consequences should be negligible...
 			return 0x09; //light level 9
 			break;
 		case MCMAP_ENDER_CHEST:
@@ -251,8 +250,11 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_AIR:
 		case MCMAP_GLASS:
 		case MCMAP_GLASS_PANE:
+		case MCMAP_STAINED_GLASS:
+		case MCMAP_STAINED_GLASS_PANE:
 		case MCMAP_CARPET:
 		case MCMAP_LEAVES:
+		case MCMAP_LEAVES_2:
 		case MCMAP_PISTON:
 		case MCMAP_STICKY_PISTON:
 		case MCMAP_PISTON_EXT:
@@ -272,10 +274,8 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_TRAPDOOR:
 		case MCMAP_UNLIT_REDSTONE_REPEATER:
 		case MCMAP_LIT_REDSTONE_REPEATER:
-		case MCMAP_UNLIT_REDSTONE_COMPARATOR:
-		case MCMAP_LIT_REDSTONE_COMPARATOR:
+		case MCMAP_REDSTONE_COMPARATOR:
 		case MCMAP_CHEST:
-		case MCMAP_LOCKED_CHEST:
 		case MCMAP_ENDER_CHEST:
 		case MCMAP_TRAPPED_CHEST:
 		case MCMAP_ENCHANTING_TABLE:
@@ -317,7 +317,7 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_POTATOES:
 		case MCMAP_NETHER_WART:
 		case MCMAP_DANDELION:
-		case MCMAP_ROSE:
+		case MCMAP_POPPY:
 		case MCMAP_BROWN_MUSHROOM:
 		case MCMAP_RED_MUSHROOM:
 		case MCMAP_SAPLING:
@@ -329,6 +329,7 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_COCOA_POD:
 		case MCMAP_FLOWER_POT:
 		case MCMAP_HEAD:
+		case MCMAP_DOUBLE_PLANT:
 			return 0x01;
 			break;
 		case MCMAP_FLOWING_WATER:
@@ -589,7 +590,7 @@ void mcmap_chunk_height_update(struct mcmap_chunk *c)
 			{
 			for (x=0;x<16;x++)
 				{
-				for (y=256; y>0 && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES && c->geom->blocks[y-1][z][x] != MCMAP_GLOWSTONE && c->geom->blocks[y-1][z][x] != MCMAP_COBWEB && _mcmap_light_update_extinct(c->geom->blocks[y-1][z][x]) == 0x01; y--);
+				for (y=256; y>0 && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES && c->geom->blocks[y-1][z][x] != MCMAP_LEAVES_2 && c->geom->blocks[y-1][z][x] != MCMAP_GLOWSTONE && c->geom->blocks[y-1][z][x] != MCMAP_COBWEB && _mcmap_light_update_extinct(c->geom->blocks[y-1][z][x]) == 0x01; y--);
 				c->light->height[z][x] = y;
 				}
 			}
