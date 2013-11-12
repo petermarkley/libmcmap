@@ -534,7 +534,7 @@ int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
 struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
 	const char *name,    //level name (separate from 'path')
-	const char *genname, //should be one of "default", "flat", or "largeBiomes" (case insensitive)
+	const char *genname, //should be one of "default", "flat", "largeBiomes", or "amplified" (case insensitive)
 	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
 		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
 	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)
