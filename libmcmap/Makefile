@@ -21,7 +21,7 @@ libmcmap.so: mcmap.o memdb.o
 	cc -shared -o libmcmap.so mcmap.o memdb.o $(CFLAGS) $(LFLAGS)
 
 mcmap.o: mcmap.c mcmap.h
-	cc -c mcmap.c $(CFLAGS)
+	cc -fPIC -c mcmap.c $(CFLAGS)
 
 memdb.o: memdb.c memdb.h
-	cc -c memdb.c $(CFLAGS)
+	cc -fPIC -c memdb.c $(CFLAGS)

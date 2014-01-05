@@ -20,4 +20,4 @@ libnbt.so: nbt.o memdb.o
 	cc -shared -o libnbt.so nbt.o memdb.o $(CFLAGS) $(LFLAGS)
 
 nbt.o: $(DEP) $(DDEP)
-	cc -c nbt.c memdb.c $(CFLAGS)
+	cc -fPIC -c nbt.c memdb.c $(CFLAGS)
