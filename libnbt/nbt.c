@@ -840,7 +840,7 @@ struct nbt_tag *nbt_separate(struct nbt_tag *t)
 //makes a copy of a tag and its children, and returns it as a separate root tag, or NULL on failure
 struct nbt_tag *nbt_copy(struct nbt_tag *i)
 	{
-	struct nbt_tag *o, *loop, **p, *t;
+	struct nbt_tag *o = NULL, *loop, **p, *t;
 	if (i != NULL)
 		{
 		if ((o = (struct nbt_tag *)calloc(1,sizeof(struct nbt_tag))) == NULL)
