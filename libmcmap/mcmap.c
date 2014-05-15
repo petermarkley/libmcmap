@@ -2564,7 +2564,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	return l;
 	}
 
-//worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+//worker function for 'mcmap_level_write()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
 int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w, int rem)
 	{
