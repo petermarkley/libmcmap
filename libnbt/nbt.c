@@ -695,7 +695,7 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	int i;
 	
 	//open file...
-	if ((f = fopen(fn,"r")) == NULL)
+	if ((f = fopen(fn,"rb")) == NULL)
 		{
 		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
 		return NULL;
@@ -747,7 +747,7 @@ int nbt_file_write(const char *fn, struct nbt_tag *t, nbt_compression_type compr
 	if ((s = nbt_encode(t,&b,compress_type)) == -1)
 		return -1;
 	//open file...
-	if ((f = fopen(fn,"w")) == NULL)
+	if ((f = fopen(fn,"wb")) == NULL)
 		{
 		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
 		return -1;

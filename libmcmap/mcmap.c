@@ -439,7 +439,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	else
 		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
 	//open file...
-	if ((r_file = fopen(r_name,"r")) == NULL)
+	if ((r_file = fopen(r_name,"rb")) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
 		return NULL;
@@ -554,7 +554,7 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 	else
 		snprintf(r_name, MCMAP_MAXSTR, "%s/r.%d.%d.mca", path, ix, iz);
 	//open file...
-	if ((r_file = fopen(r_name,"w")) == NULL)
+	if ((r_file = fopen(r_name,"wb")) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
 		return -1;
@@ -2687,11 +2687,11 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 	if (mcmap_light_update(l,&(l->end)) == -1)
 		return -1;
 	//check if we still have the session lock...
-	if ((f = fopen(spath,"r+")) == NULL)
+	if ((f = fopen(spath,"rb+")) == NULL)
 		{
 		//if the file doesn't exist, create it...
 		cswapw_64(b,l->lock);
-		if ((f = fopen(spath,"w")) == NULL)
+		if ((f = fopen(spath,"wb")) == NULL)
 			{
 			snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",spath,strerror(errno));
 			return -1;
