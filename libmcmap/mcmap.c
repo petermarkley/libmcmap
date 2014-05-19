@@ -974,8 +974,13 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 		{
 		if (Sections->payload.p_list != NBT_COMPOUND)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; List \'Sections\' was not type Compound");
-			return -1;
+			if (Sections->firstchild == NULL)
+				Sections->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
+			else
+				{
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'Sections\' List was not type Compound");
+				return -1;
+				}
 			}
 		}
 	//WHEW... now that THAT's over with...
