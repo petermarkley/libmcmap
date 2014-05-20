@@ -398,7 +398,7 @@ int _mcmap_region_chunk_check(struct mcmap_region *r, int x, int z)
 	return 0;
 	}
 
-//allocates and initializes a bare minimum region, which can be passed to 'mcmap_chunk_write()'
+//allocates a bare minimum region, which can be passed to 'mcmap_region_write()'; returns NULL on failure
 struct mcmap_region *mcmap_region_new(void)
 	{
 	struct mcmap_region *r;

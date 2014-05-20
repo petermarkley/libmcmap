@@ -375,7 +375,7 @@ struct mcmap_region
 	size_t size; //byte size of region file
 	};
 
-//allocates a bare minimum region, which can be passed to 'mcmap_chunk_write()'; returns NULL on failure
+//allocates a bare minimum region, which can be passed to 'mcmap_region_write()'; returns NULL on failure
 struct mcmap_region *mcmap_region_new(void);
 
 //searches the given path to a minecraft region folder and parses the region file for the given X & Z region coordinates
