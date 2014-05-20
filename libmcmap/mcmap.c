@@ -55,54 +55,54 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 	if (w == NULL) return 0;
 	if (w->path != NULL && (ret1 = memdb_check(w->path)) != (ret2 = strlen(w->path)+1))
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->path\'=%p) returned %d (expected string of size %d)",world,w->path,ret1,ret2);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->path'=%p) returned %d (expected string of size %d)",world,w->path,ret1,ret2);
 		return -1;
 		}
 	ret1 = (w->size_x != 0 && w->size_z != 0);
 	if ((w->regions == NULL && ret1) || (!ret1 && w->regions != NULL))
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'regions\' NULL status disagrees with recorded size");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'regions' NULL status disagrees with recorded size");
 		return -1;
 		}
 	if (w->regions != NULL && (ret1 = memdb_check(w->regions)) != (ret2 = w->size_z*sizeof(struct mcmap_level_region **)))
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions\'=%p) returned %d (expected %d pointers totaling %d bytes)",world,w->regions,ret1,w->size_z,ret2);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions'=%p) returned %d (expected %d pointers totaling %d bytes)",world,w->regions,ret1,w->size_z,ret2);
 		return -1;
 		}
 	for (z=0; z < w->size_z; z++)
 		{
 		if (w->regions[z] == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"\'l->%s->regions[%d]\' exists but points to NULL",world,z);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"'l->%s->regions[%d]' exists but points to NULL",world,z);
 			return -1;
 			}
 		if ((ret1 = memdb_check(w->regions[z])) != (ret2 = w->size_x*sizeof(struct mcmap_level_region *)))
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d]\'=%p) returned %d (expected %d pointers totaling %d bytes)",world,z,w->regions[z],ret1,w->size_x,ret2);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d]'=%p) returned %d (expected %d pointers totaling %d bytes)",world,z,w->regions[z],ret1,w->size_x,ret2);
 			return -1;
 			}
 		for (x=0; x < w->size_x; x++)
 			{
 			if (w->regions[z][x] == NULL)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"\'l->%s->regions[%d][%d]\' exists but points to NULL",world,z,x);
+				snprintf(mcmap_error,MCMAP_MAXSTR,"'l->%s->regions[%d][%d]' exists but points to NULL",world,z,x);
 				return -1;
 				}
 			if ((ret1 = memdb_check(w->regions[z][x])) != (ret2 = sizeof(struct mcmap_level_region)))
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]\'=%p) returned %d (expected \'struct mcmap_level_region\' size %d)",world,z,x,w->regions[z][x],ret1,ret2);
+				snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]'=%p) returned %d (expected 'struct mcmap_level_region' size %d)",world,z,x,w->regions[z][x],ret1,ret2);
 				return -1;
 				}
 			if (w->regions[z][x]->raw != NULL)
 				{
 				if ((ret1 = memdb_check(w->regions[z][x]->raw)) != (ret2 = sizeof(struct mcmap_region)))
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->raw\'=%p) returned %d (expected \'struct mcmap_region\' size %d)",world,z,x,w->regions[z][x]->raw,ret1,ret2);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->raw'=%p) returned %d (expected 'struct mcmap_region' size %d)",world,z,x,w->regions[z][x]->raw,ret1,ret2);
 					return -1;
 					}
 				if ((ret1 = memdb_check(w->regions[z][x]->raw->header)) != (ret2 = w->regions[z][x]->raw->size))
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->raw->header\'=%p) returned %d (expected %d bytes)",world,z,x,w->regions[z][x]->raw->header,ret1,ret2);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->raw->header'=%p) returned %d (expected %d bytes)",world,z,x,w->regions[z][x]->raw->header,ret1,ret2);
 					return -1;
 					}
 				}
@@ -114,49 +114,49 @@ int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 						{
 						if ((ret1 = memdb_check(c)) != (ret2 = sizeof(struct mcmap_chunk)))
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]\'=%p) returned %d (expected \'struct mcmap_chunk\' size %d)",world,z,x,cz,cx,c,ret1,ret2);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->chunks[%d][%d]'=%p) returned %d (expected 'struct mcmap_chunk' size %d)",world,z,x,cz,cx,c,ret1,ret2);
 							return -1;
 							}
 						if (c->raw != NULL && nbt_memcheck(c->raw) == -1)
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->raw\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"%s on 'l->%s->regions[%d][%d]->chunks[%d][%d]->raw': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
 							return -1;
 							}
 						if (c->geom != NULL && (ret1 = memdb_check(c->geom)) != (ret2 = sizeof(struct mcmap_chunk_geom)))
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->geom\'=%p) returned %d (expected \'struct mcmap_chunk_goem\' size %d)",world,z,x,cz,cx,c->geom,ret1,ret2);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->chunks[%d][%d]->geom'=%p) returned %d (expected 'struct mcmap_chunk_goem' size %d)",world,z,x,cz,cx,c->geom,ret1,ret2);
 							return -1;
 							}
 						if (c->light != NULL && (ret1 = memdb_check(c->light)) != (ret2 = sizeof(struct mcmap_chunk_light)))
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->light\'=%p) returned %d (expected \'struct mcmap_chunk_light\' size %d)",world,z,x,cz,cx,c->light,ret1,ret2);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->chunks[%d][%d]->light'=%p) returned %d (expected 'struct mcmap_chunk_light' size %d)",world,z,x,cz,cx,c->light,ret1,ret2);
 							return -1;
 							}
 						if (c->meta != NULL && (ret1 = memdb_check(c->meta)) != (ret2 = sizeof(struct mcmap_chunk_meta)))
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->meta\'=%p) returned %d (expected \'struct mcmap_chunk_meta\' size %d)",world,z,x,cz,cx,c->meta,ret1,ret2);
+							snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->chunks[%d][%d]->meta'=%p) returned %d (expected 'struct mcmap_chunk_meta' size %d)",world,z,x,cz,cx,c->meta,ret1,ret2);
 							return -1;
 							}
 						if (c->special != NULL)
 							{
 							if ((ret1 = memdb_check(c->special)) != (ret2 = sizeof(struct mcmap_chunk_special)))
 								{
-								snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->%s->regions[%d][%d]->chunks[%d][%d]->special\'=%p) returned %d (expected \'struct mcmap_chunk_special\' size %d)",world,z,x,cz,cx,c->special,ret1,ret2);
+								snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->%s->regions[%d][%d]->chunks[%d][%d]->special'=%p) returned %d (expected 'struct mcmap_chunk_special' size %d)",world,z,x,cz,cx,c->special,ret1,ret2);
 								return -1;
 								}
 							if (c->special->entities != NULL && nbt_memcheck(c->special->entities) == -1)
 								{
-								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->entities\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on 'l->%s->regions[%d][%d]->chunks[%d][%d]->special->entities': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
 								return -1;
 								}
 							if (c->special->tile_entities != NULL && nbt_memcheck(c->special->tile_entities) == -1)
 								{
-								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_entities\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on 'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_entities': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
 								return -1;
 								}
 							if (c->special->tile_ticks != NULL && nbt_memcheck(c->special->tile_ticks) == -1)
 								{
-								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_ticks\': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
+								snprintf(mcmap_error,MCMAP_MAXSTR,"%s on 'l->%s->regions[%d][%d]->chunks[%d][%d]->special->tile_ticks': %s",NBT_LIBNAME,world,z,x,cz,cx,nbt_error);
 								return -1;
 								}
 							}
@@ -178,17 +178,17 @@ int mcmap_level_memcheck(struct mcmap_level *l)
 	if (l == NULL) return 0;
 	if ((ret1 = memdb_check(l)) != (ret2 = sizeof(struct mcmap_level)))
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l\'=%p) returned %d (expected \'struct mcmap_level\' size %d)",l,ret1,ret2);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l'=%p) returned %d (expected 'struct mcmap_level' size %d)",l,ret1,ret2);
 		return -1;
 		}
 	if (l->path != NULL && (ret1 = memdb_check(l->path)) != (ret2 = strlen(l->path)+1))
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check(\'l->path\'=%p) returned %d (expected string of size %d)",l->path,ret1,ret2);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"memdb_check('l->path'=%p) returned %d (expected string of size %d)",l->path,ret1,ret2);
 		return -1;
 		}
 	if (l->meta != NULL && nbt_memcheck(l->meta) == -1)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"%s on \'l->meta\': %s",NBT_LIBNAME,nbt_error);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"%s on 'l->meta': %s",NBT_LIBNAME,nbt_error);
 		return -1;
 		}
 	if (_mcmap_level_world_memcheck(&(l->overworld),"overworld") == -1) return -1;
@@ -428,7 +428,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	unsigned int x,z,i;
 	if (path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' is NULL");
 		return NULL;
 		}
 	
@@ -441,13 +441,13 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	//open file...
 	if ((r_file = fopen(r_name,"rb")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on '%s': %s",r_name,strerror(errno));
 		return NULL;
 		}
 	//determine filesize...
 	if (fstat(fileno(r_file),&r_stat) != 0)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fstat() on \'%s\': %s",r_name,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fstat() on '%s': %s",r_name,strerror(errno));
 		return NULL;
 		}
 	//allocate buffer...
@@ -459,7 +459,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 	//copy file to buffer...
 	if ((i = fread(buff,1,r_stat.st_size,r_file)) != r_stat.st_size)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(r_file)?"an error":"EOF"),(unsigned int)r_stat.st_size-i,r_name);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of '%s'",(ferror(r_file)?"an error":"EOF"),(unsigned int)r_stat.st_size-i,r_name);
 		return NULL;
 		}
 	//don't need this anymore...
@@ -492,7 +492,7 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 				//sanity check
 				if (_mcmap_region_chunk_check(r,x,z) == -1)
 					{
-					snprintf(mcmap_error,MCMAP_MAXSTR,"\'%s\': %s",r_name,mcmap_error);
+					snprintf(mcmap_error,MCMAP_MAXSTR,"'%s': %s",r_name,mcmap_error);
 					return NULL;
 					}
 				}
@@ -519,7 +519,7 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 	unsigned int x,z,i;
 	if (path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' is NULL");
 		return -1;
 		}
 	
@@ -556,14 +556,14 @@ int mcmap_region_write(struct mcmap_region *r, int ix, int iz, const char *path)
 	//open file...
 	if ((r_file = fopen(r_name,"wb")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",r_name,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on '%s': %s",r_name,strerror(errno));
 		return -1;
 		}
 	//write file...
 	buff = (uint8_t *)r->header;
 	if ((i = fwrite(buff,1,r->size,r_file)) != r->size)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",r_name);
+		snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on '%s'",r_name);
 		return -1;
 		}
 	//don't need this anymore...
@@ -669,7 +669,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	//drill past root container
 	if ((t = nbt_child_find(c->raw,NBT_COMPOUND,"Level")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Compound \'Level\' not found as child of root tag");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Compound 'Level' not found as child of root tag");
 		return NULL;
 		}
 	//read biomes
@@ -677,7 +677,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		{
 		if (p->payload.p_byte_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Biomes\' did not have size 256");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'Biomes' did not have size 256");
 			return NULL;
 			}
 		memcpy(c->geom->biomes,p->payload.p_byte_array.data,256);
@@ -685,7 +685,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	//read modified time
 	if ((p = nbt_child_find(t,NBT_LONG,"LastUpdate")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Long \'LastUpdate\' not found");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Long 'LastUpdate' not found");
 		return NULL;
 		}
 	c->meta->mtime = p->payload.p_long;
@@ -700,13 +700,13 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	//read X & Z coords
 	if ((p = nbt_child_find(t,NBT_INT,"xPos")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int \'xPos\' not found");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int 'xPos' not found");
 		return NULL;
 		}
 	c->x = p->payload.p_int;
 	if ((p = nbt_child_find(t,NBT_INT,"zPos")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int \'zPos\' not found");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int 'zPos' not found");
 		return NULL;
 		}
 	c->z = p->payload.p_int;
@@ -717,14 +717,14 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		//height map
 		if ((p = nbt_child_find(t,NBT_INT_ARRAY,"HeightMap")) == NULL || p->payload.p_int_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int Array \'HeightMap\' with size 256 not found");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Int Array 'HeightMap' with size 256 not found");
 			return NULL;
 			}
 		memcpy(c->light->height,p->payload.p_int_array.data,256*4);
 		//special objects
 		if ((c->special->entities = nbt_child_find(t,NBT_LIST,"Entities")) == NULL || (c->special->tile_entities = nbt_child_find(t,NBT_LIST,"TileEntities")) == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: one or both of Lists \'Entities\' & \'TileEntities\' not found");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: one or both of Lists 'Entities' & 'TileEntities' not found");
 			return NULL;
 			}
 		c->special->tile_ticks = nbt_child_find(t,NBT_LIST,"TileTicks");
@@ -733,7 +733,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 	//read sections
 	if ((t = nbt_child_find(t,NBT_LIST,"Sections")) == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: List \'Sections\' not found");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: List 'Sections' not found");
 		return NULL;
 		}
 	for (l = t->firstchild; l != NULL; l = l->next_sib)
@@ -742,7 +742,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		//determine Y index
 		if ((p = nbt_child_find(l,NBT_BYTE,"Y")) == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte \'Y\' not found");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte 'Y' not found");
 			return NULL;
 			}
 		//store Y index for a minute
@@ -750,7 +750,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		//block IDs
 		if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"Blocks")) == NULL || p->payload.p_byte_array.size != 4096)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Blocks\' with size 4096 not found");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'Blocks' with size 4096 not found");
 			return NULL;
 			}
 		//no memcpy() this time, our arrays are different types/sizes
@@ -771,7 +771,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 			{
 			if (p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Add\' did not have size 2048");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'Add' did not have size 2048");
 				return NULL;
 				}
 			i=0;
@@ -793,7 +793,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		//block metadata
 		if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"Data")) == NULL || p->payload.p_byte_array.size != 2048)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Data\' with size 2048 not found");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'Data' with size 2048 not found");
 			return NULL;
 			}
 		i=0;
@@ -817,7 +817,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 			//block-emitted light
 			if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"BlockLight")) == NULL || p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'Block Light\' with size 2048 not found");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'Block Light' with size 2048 not found");
 				return NULL;
 				}
 			i=0;
@@ -838,7 +838,7 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 			//sky-emitted light
 			if ((p = nbt_child_find(l,NBT_BYTE_ARRAY,"SkyLight")) == NULL || p->payload.p_byte_array.size != 2048)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array \'SkyLight\' with size 2048 not found");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk: Byte Array 'SkyLight' with size 2048 not found");
 				return NULL;
 				}
 			i=0;
@@ -957,7 +957,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 		{
 		if (Biomes->payload.p_byte_array.size != 256)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Biomes\' was not size 256");
+			snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'Biomes' was not size 256");
 			return -1;
 			}
 		}
@@ -978,7 +978,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 				Sections->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 			else
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'Sections\' List was not type Compound");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty 'Sections' List was not type Compound");
 				return -1;
 				}
 			}
@@ -999,7 +999,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if ((probe = nbt_child_find(loop,NBT_BYTE,"Y")) == NULL || probe->payload.p_byte < 0 || probe->payload.p_byte > 15)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Compound child of List \'Sections\' did not have a \'Y\' index in range");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Compound child of List 'Sections' did not have a 'Y' index in range");
 				return -1;
 				}
 			s[probe->payload.p_byte] = loop;
@@ -1068,7 +1068,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe->payload.p_byte_array.size != 4096)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Blocks\' was not size 4096");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'Blocks' was not size 4096");
 						return -1;
 						}
 					}
@@ -1106,7 +1106,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						{
 						if (probe->payload.p_byte_array.size != 2048)
 							{
-							snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Add\' was not size 2048");
+							snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'Add' was not size 2048");
 							return -1;
 							}
 						}
@@ -1146,7 +1146,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe->payload.p_byte_array.size != 2048)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'Data\' was not size 2048");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'Data' was not size 2048");
 						return -1;
 						}
 					}
@@ -1190,7 +1190,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			{
 			if (HeightMap->payload.p_int_array.size != 256)
 				{
-				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Int Array \'HeightMap\' was not size 256");
+				snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Int Array 'HeightMap' was not size 256");
 				return -1;
 				}
 			}
@@ -1219,7 +1219,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe->payload.p_byte_array.size != 2048)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'SkyLight\' was not size 2048");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'SkyLight' was not size 2048");
 						return -1;
 						}
 					}
@@ -1242,7 +1242,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 					{
 					if (probe1->payload.p_byte_array.size != 2048)
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array \'BlockLight\' was not size 2048");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; Byte Array 'BlockLight' was not size 2048");
 						return -1;
 						}
 					}
@@ -1308,7 +1308,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						Entities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'Entities\' List was not type Compound");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty 'Entities' List was not type Compound");
 						return -1;
 						}
 					}
@@ -1372,7 +1372,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						TileEntities->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileEntities\' List was not type Compound");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty 'TileEntities' List was not type Compound");
 						return -1;
 						}
 					}
@@ -1436,7 +1436,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 						TileTicks->payload.p_list = NBT_COMPOUND; //apparently minecraft sometimes saves empty lists with type NBT_BYTE ... ? go figure
 					else
 						{
-						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty \'TileTicks\' List was not type Compound");
+						snprintf(mcmap_error,MCMAP_MAXSTR,"malformed chunk; non-empty 'TileTicks' List was not type Compound");
 						return -1;
 						}
 					}
@@ -2044,17 +2044,17 @@ struct mcmap_level *mcmap_level_new (
 		seed = (long int)time(NULL);
 	if (path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' is NULL");
 		return NULL;
 		}
 	if (name == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'name\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'name' is NULL");
 		return NULL;
 		}
 	if (genname == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'genname\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'genname' is NULL");
 		return NULL;
 		}
 	
@@ -2515,7 +2515,7 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	struct nbt_tag *t;
 	if (path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' is NULL");
 		return NULL;
 		}
 	
@@ -2580,7 +2580,7 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 	time_t t;
 	if (w->path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' string is NULL");
 		return -1;
 		}
 	
@@ -2593,7 +2593,7 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 	//make sure directory exists
 	if (mkdir(fpath,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on \'%s\': %s",fpath,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on '%s': %s",fpath,strerror(errno));
 		return -1;
 		}
 	
@@ -2662,13 +2662,13 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		return 0;
 	if (l->path == NULL)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"\'path\' string is NULL");
+		snprintf(mcmap_error,MCMAP_MAXSTR,"'path' string is NULL");
 		return -1;
 		}
 	//make sure directory exists
 	if (mkdir(l->path,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
 		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on \'%s\': %s",l->path,strerror(errno));
+		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on '%s': %s",l->path,strerror(errno));
 		return -1;
 		}
 	//resolve filenames from map directory...
@@ -2698,12 +2698,12 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		cswapw_64(b,l->lock);
 		if ((f = fopen(spath,"wb")) == NULL)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on \'%s\': %s",spath,strerror(errno));
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fopen() on '%s': %s",spath,strerror(errno));
 			return -1;
 			}
 		if (fwrite(b,1,8,f) != 8)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on '%s'",spath);
 			return -1;
 			}
 		}
@@ -2712,7 +2712,7 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		//make sure the lock file doesn't show activity after our level struct was created...
 		if ((i = fread(b,1,8,f)) != 8)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),8-(int)i,spath);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fread() encountered %s on the last %d requested bytes of '%s'",(ferror(f)?"an error":"EOF"),8-(int)i,spath);
 			return -1;
 			}
 		if ((ret = cswapr_64(b)) > l->lock)
@@ -2724,14 +2724,14 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		//we're okay, now record our activity to alert other applications...
 		if (fseek(f,0,SEEK_SET) == -1)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fseek() on \'%s\': %s",spath,strerror(errno));
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fseek() on '%s': %s",spath,strerror(errno));
 			return -1;
 			}
 		l->lock = time(NULL)*1000;
 		cswapw_64(b,l->lock);
 		if (fwrite(b,1,8,f) != 8)
 			{
-			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on \'%s\'",spath);
+			snprintf(mcmap_error,MCMAP_MAXSTR,"fwrite() returned short item count on '%s'",spath);
 			return -1;
 			}
 		}

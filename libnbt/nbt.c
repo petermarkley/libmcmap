@@ -57,7 +57,7 @@ size_t _nbt_decompress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_co
 	//we're responsible for allocating output
 	if (output[0] != NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"_nbt_decompress() was passed a non-null \'output[0]\' pointer for allocation");
+		snprintf(nbt_error,NBT_MAXSTR,"_nbt_decompress() was passed a non-null 'output[0]' pointer for allocation");
 		return 0;
 		}
 	switch (compress_type)
@@ -438,7 +438,7 @@ int _nbt_tag_write(uint8_t **output, unsigned int nextin, size_t *size, struct n
 	switch (t->type)
 		{
 		case NBT_END:
-			snprintf(nbt_error,NBT_MAXSTR,"\'nbt_tag\' struct has type NBT_END");
+			snprintf(nbt_error,NBT_MAXSTR,"'nbt_tag' struct has type NBT_END");
 			return -1;
 			break;
 		case NBT_BYTE:
@@ -568,7 +568,7 @@ size_t _nbt_compress(uint8_t *input, uint8_t **output, size_t input_sz, nbt_comp
 	//we're responsible for allocating output
 	if (output[0] != NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"_nbt_compress() was passed a non-null \'output[0]\' pointer for allocation");
+		snprintf(nbt_error,NBT_MAXSTR,"_nbt_compress() was passed a non-null 'output[0]' pointer for allocation");
 		return 0;
 		}
 	switch (compress_type)
@@ -652,7 +652,7 @@ int nbt_encode(struct nbt_tag *t, uint8_t **output, nbt_compression_type compres
 	//sanity checks
 	if (output[0] != NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"nbt_encode() was passed a non-null \'output[0]\' pointer for allocation");
+		snprintf(nbt_error,NBT_MAXSTR,"nbt_encode() was passed a non-null 'output[0]' pointer for allocation");
 		return -1;
 		}
 	if (compress_type == NBT_COMPRESS_UNKNOWN)
@@ -697,13 +697,13 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	//open file...
 	if ((f = fopen(fn,"rb")) == NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() on '%s': %s",fn,strerror(errno));
 		return NULL;
 		}
 	//determine filesize...
 	if (fstat(fileno(f),&fs) != 0)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"fstat() on \'%s\': %s",fn,strerror(errno));
+		snprintf(nbt_error,NBT_MAXSTR,"fstat() on '%s': %s",fn,strerror(errno));
 		return NULL;
 		}
 	//allocate buffer...
@@ -715,7 +715,7 @@ struct nbt_tag *nbt_file_read(const char *fn)
 	//copy file to buffer...
 	if ((i = fread(b,1,fs.st_size,f)) != fs.st_size)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"fread() encountered %s on the last %d requested bytes of \'%s\'",(ferror(f)?"an error":"EOF"),(unsigned int)fs.st_size-i,fn);
+		snprintf(nbt_error,NBT_MAXSTR,"fread() encountered %s on the last %d requested bytes of '%s'",(ferror(f)?"an error":"EOF"),(unsigned int)fs.st_size-i,fn);
 		return NULL;
 		}
 	//don't need this anymore...
@@ -725,7 +725,7 @@ struct nbt_tag *nbt_file_read(const char *fn)
 		{
 		if ((t = nbt_decode(b,fs.st_size,NBT_COMPRESS_NONE)) == NULL)
 			{
-			snprintf(nbt_error,NBT_MAXSTR,"couldn't determine how to read \'%s\'; file corrupted?",fn);
+			snprintf(nbt_error,NBT_MAXSTR,"couldn't determine how to read '%s'; file corrupted?",fn);
 			return NULL;
 			}
 		}
@@ -749,7 +749,7 @@ int nbt_file_write(const char *fn, struct nbt_tag *t, nbt_compression_type compr
 	//open file...
 	if ((f = fopen(fn,"wb")) == NULL)
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"fopen() on \'%s\': %s",fn,strerror(errno));
+		snprintf(nbt_error,NBT_MAXSTR,"fopen() on '%s': %s",fn,strerror(errno));
 		return -1;
 		}
 	//write file...
@@ -1132,7 +1132,7 @@ int nbt_memcheck(struct nbt_tag *t)
 	if (t == NULL) return 0;
 	if (t->name != NULL && (ret1 = memdb_check(t->name)) != (ret2 = strlen(t->name)+1))
 		{
-		snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\'t->name\'=%p) returned %d (expected string of size %d)",t->name,ret1,ret2);
+		snprintf(nbt_error,NBT_MAXSTR,"memdb_check('t->name'=%p) returned %d (expected string of size %d)",t->name,ret1,ret2);
 		return -1;
 		}
 	switch(t->type)
@@ -1140,21 +1140,21 @@ int nbt_memcheck(struct nbt_tag *t)
 		case NBT_BYTE_ARRAY:
 			if (t->payload.p_byte_array.size != 0 && (ret1 = memdb_check(t->payload.p_byte_array.data)) != (ret2 = t->payload.p_byte_array.size))
 				{
-				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_byte_array.data\'=%p) returned %d (expected %d bytes)",t->name,t->payload.p_byte_array.data,ret1,ret2);
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->'payload.p_byte_array.data'=%p) returned %d (expected %d bytes)",t->name,t->payload.p_byte_array.data,ret1,ret2);
 				return -1;
 				}
 		break;
 		case NBT_STRING:
 			if (t->payload.p_string != NULL && (ret1 = memdb_check(t->payload.p_string)) != (ret2 = strlen(t->payload.p_string)+1))
 				{
-				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_string\'=%p) returned %d (expected string of size %d)",t->name,t->payload.p_string,ret1,ret2);
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->'payload.p_string'=%p) returned %d (expected string of size %d)",t->name,t->payload.p_string,ret1,ret2);
 				return -1;
 				}
 		break;
 		case NBT_INT_ARRAY:
 			if (t->payload.p_int_array.size != 0 && (ret1 = memdb_check(t->payload.p_int_array.data)) != (ret2 = t->payload.p_int_array.size*sizeof(int32_t)))
 				{
-				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->\'payload.p_int_array.data\'=%p) returned %d (expected %d 'int32_t's totaling %d bytes)",t->name,t->payload.p_int_array.data,ret1,t->payload.p_int_array.size,ret2);
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->'payload.p_int_array.data'=%p) returned %d (expected %d 'int32_t's totaling %d bytes)",t->name,t->payload.p_int_array.data,ret1,t->payload.p_int_array.size,ret2);
 				return -1;
 				}
 		break;
