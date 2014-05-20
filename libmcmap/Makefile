@@ -5,14 +5,17 @@ LFLAGS=-lz -lm -lnbt
 all:
 	@echo Please use either \'make osx\' or \'make linux\'
 
-osx: libmcmap.dylib test
-linux: libmcmap.so test
+osx: libmcmap.dylib test shownbt
+linux: libmcmap.so test shownbt
 
 clean:
 	rm -rf *.so *.dylib *.o test test.dSYM
 
 test: test.c
 	cc -o test test.c libmcmap.* $(CFLAGS) $(LFLAGS)
+
+shownbt: shownbt.c
+	cc -o shownbt shownbt.c libmcmap.* $(CFLAGS) $(LFLAGS)
 
 libmcmap.dylib: mcmap.o memdb.o
 	cc -dynamiclib -o libmcmap.dylib mcmap.o memdb.o $(CFLAGS) $(LFLAGS)
