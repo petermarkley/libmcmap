@@ -1081,7 +1081,7 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 			else
 				fprintf(f," . . .");
 			break;
-		case NBT_STRING:    fprintf(f,"%s",((t->payload.p_string != NULL)?t->payload.p_string:"(null)")); break;
+		case NBT_STRING:    fprintf(f,"\"%s\"",((t->payload.p_string != NULL)?t->payload.p_string:"(null)")); break;
 		case NBT_LIST: break;
 		case NBT_COMPOUND: break;
 		case NBT_INT_ARRAY:
