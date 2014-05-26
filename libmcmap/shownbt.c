@@ -125,5 +125,7 @@ int main(int argc, char **argv)
 			}
 		nbt_print_ascii(stdout,t,v,w);
 		}
+	//clean up
+	nbt_free(t);
 	return 0;
 	}
