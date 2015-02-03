@@ -58,7 +58,7 @@ char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated wi
 // general definitions
 // -------------------
 
-//minecraft 1.7.2 data values < http://minecraft.gamepedia.com/Data_values >
+//minecraft 1.8.1 data values < http://minecraft.gamepedia.com/Data_values >
 //library does not entirely rely on block definitions being complete
 typedef enum
 	{
@@ -211,8 +211,8 @@ typedef enum
 	MCMAP_TRAPPED_CHEST             = 146,
 	MCMAP_LIGHT_PRESSURE_PLATE      = 147,
 	MCMAP_HEAVY_PRESSURE_PLATE      = 148,
-	MCMAP_REDSTONE_COMPARATOR       = 149,
-	                               // 150,
+	MCMAP_UNLIT_REDSTONE_COMPARATOR = 149,
+	MCMAP_LIT_REDSTONE_COMPARATOR   = 150,
 	MCMAP_DAYLIGHT_SENSOR           = 151,
 	MCMAP_REDSTONE_BLOCK            = 152,
 	MCMAP_NETHER_QUARTZ_ORE         = 153,
@@ -227,17 +227,39 @@ typedef enum
 	MCMAP_WOOD_2                    = 162,
 	MCMAP_ACACIA_WOOD_STAIRS        = 163,
 	MCMAP_DARK_OAK_WOOD_STAIRS      = 164,
-	                               // 165,
-	                               // 166,
-	                               // 167,
-	                               // 168,
-	                               // 169,
+	MCMAP_SLIME_BLOCK               = 165,
+	MCMAP_BARRIER                   = 166,
+	MCMAP_IRON_TRAPDOOR             = 167,
+	MCMAP_PRISMARINE                = 168,
+	MCMAP_SEA_LANTERN               = 169,
 	MCMAP_HAY_BLOCK                 = 170,
 	MCMAP_CARPET                    = 171,
 	MCMAP_HARDENED_CLAY             = 172,
 	MCMAP_COAL_BLOCK                = 173,
 	MCMAP_PACKED_ICE                = 174,
-	MCMAP_DOUBLE_PLANT              = 175
+	MCMAP_DOUBLE_PLANT              = 175,
+	MCMAP_STANDING_BANNER           = 176,
+	MCMAP_WALL_BANNER               = 177,
+	MCMAP_INVERTED_DAYLIGHT_SENSOR  = 178,
+	MCMAP_RED_SANDSTONE             = 179,
+	MCMAP_RED_SANDSTONE_STAIRS      = 180,
+	MCMAP_RED_SANDSTONE_DOUBLE_SLAB = 181,
+	MCMAP_RED_SANDSTONE_SLAB        = 182,
+	MCMAP_SPRUCE_GATE               = 183,
+	MCMAP_BIRCH_GATE                = 184,
+	MCMAP_JUNGLE_GATE               = 185,
+	MCMAP_DARK_OAK_GATE             = 186,
+	MCMAP_ACACIA_GATE               = 187,
+	MCMAP_SPRUCE_FENCE              = 188,
+	MCMAP_BIRCH_FENCE               = 189,
+	MCMAP_JUNGLE_FENCE              = 190,
+	MCMAP_DARK_OAK_FENCE            = 191,
+	MCMAP_ACACIA_FENCE              = 192,
+	MCMAP_SPRUCE_WOOD_DOOR          = 193,
+	MCMAP_BIRCH_WOOD_DOOR           = 194,
+	MCMAP_JUNGLE_WOOD_DOOR          = 195,
+	MCMAP_ACACIA_WOOD_DOOR          = 196,
+	MCMAP_DARK_OAK_WOOD_DOOR        = 197
 	} mcmap_blockid;
 typedef enum
 	{
@@ -480,7 +502,8 @@ enum
 	{
 	MCMAP_GAME_SURVIVAL = 0,
 	MCMAP_GAME_CREATIVE = 1,
-	MCMAP_GAME_ADVENTURE = 2
+	MCMAP_GAME_ADVENTURE = 2,
+	MCMAP_GAME_SPECTATOR = 3
 	};
 
 struct mcmap_level_region
@@ -534,7 +557,7 @@ int mcmap_light_update(struct mcmap_level *, struct mcmap_level_world *);
 struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
 	const char *name,    //level name (separate from 'path')
-	const char *genname, //should be one of "default", "flat", "largeBiomes", or "amplified" (case insensitive)
+	const char *genname, //should be one of "default", "flat", "largeBiomes", "amplified", "customized", or "debug_all_block_states" (case insensitive)
 	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
 		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
 	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)

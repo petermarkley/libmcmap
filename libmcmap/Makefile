@@ -9,7 +9,7 @@ osx: libmcmap.dylib test shownbt
 linux: libmcmap.so test shownbt
 
 clean:
-	rm -rf *.so *.dylib *.o test test.dSYM
+	rm -rf *.so *.dylib *.o test test.dSYM shownbt shownbt.dSYM
 
 test: test.c
 	cc -o test test.c libmcmap.* $(CFLAGS) $(LFLAGS)

@@ -211,6 +211,7 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 		case MCMAP_FLOWING_LAVA:
 		case MCMAP_LAVA:
 		case MCMAP_LIT_REDSTONE_LAMP:
+		case MCMAP_SEA_LANTERN:
 			return 0x0f; //light level 15
 			break;
 		case MCMAP_TORCH:
@@ -224,7 +225,7 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 			break;
 		case MCMAP_GLOWING_REDSTONE_ORE:
 		case MCMAP_LIT_REDSTONE_REPEATER:
-		case MCMAP_REDSTONE_COMPARATOR: //this is wrong if the comparator is unlit, but there's not much we can do and the consequences should be negligible...
+		case MCMAP_LIT_REDSTONE_COMPARATOR:
 			return 0x09; //light level 9
 			break;
 		case MCMAP_ENDER_CHEST:
@@ -272,9 +273,11 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_WOOD_DOOR:
 		case MCMAP_IRON_DOOR:
 		case MCMAP_TRAPDOOR:
+		case MCMAP_IRON_TRAPDOOR:
 		case MCMAP_UNLIT_REDSTONE_REPEATER:
 		case MCMAP_LIT_REDSTONE_REPEATER:
-		case MCMAP_REDSTONE_COMPARATOR:
+		case MCMAP_UNLIT_REDSTONE_COMPARATOR:
+		case MCMAP_LIT_REDSTONE_COMPARATOR:
 		case MCMAP_CHEST:
 		case MCMAP_ENDER_CHEST:
 		case MCMAP_TRAPPED_CHEST:
@@ -284,6 +287,7 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_END_PORTAL_FRAME:
 		case MCMAP_HOPPER:
 		case MCMAP_DAYLIGHT_SENSOR:
+		case MCMAP_INVERTED_DAYLIGHT_SENSOR:
 		case MCMAP_SNOW:
 		case MCMAP_LILY_PAD:
 		case MCMAP_DRAGON_EGG:
@@ -329,7 +333,27 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_COCOA_POD:
 		case MCMAP_FLOWER_POT:
 		case MCMAP_HEAD:
+		case MCMAP_SLIME_BLOCK:
+		case MCMAP_BARRIER:
+		case MCMAP_SEA_LANTERN:
 		case MCMAP_DOUBLE_PLANT:
+		case MCMAP_STANDING_BANNER:
+		case MCMAP_WALL_BANNER:
+		case MCMAP_SPRUCE_GATE:
+		case MCMAP_BIRCH_GATE:
+		case MCMAP_JUNGLE_GATE:
+		case MCMAP_DARK_OAK_GATE:
+		case MCMAP_ACACIA_GATE:
+		case MCMAP_SPRUCE_FENCE:
+		case MCMAP_BIRCH_FENCE:
+		case MCMAP_JUNGLE_FENCE:
+		case MCMAP_DARK_OAK_FENCE:
+		case MCMAP_ACACIA_FENCE:
+		case MCMAP_SPRUCE_WOOD_DOOR:
+		case MCMAP_BIRCH_WOOD_DOOR:
+		case MCMAP_JUNGLE_WOOD_DOOR:
+		case MCMAP_ACACIA_WOOD_DOOR:
+		case MCMAP_DARK_OAK_WOOD_DOOR:
 			return 0x01;
 			break;
 		case MCMAP_FLOWING_WATER:
