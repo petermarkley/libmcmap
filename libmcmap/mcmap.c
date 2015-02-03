@@ -3,29 +3,29 @@
 //               Minecraft map reading & writing
 //      < http://minecraft.gamepedia.com/Level_Format >
 // 
-// Written by and Copyright 2013 Peter Markley <quartz@malexmedia.net>
-// Distributed under the terms of the GNU General Public License.
+// Copyright 2013-2015 by Peter Markley <quartz@malexmedia.net>.
+// Distributed under the terms of the Lesser GNU General Public License.
 // 
-// Minecraft is the property of Mojang and a trademark of Notch
-// Developement AB. Libmcmap is developed by a third party under the
-// terms provided at < http://minecraft.net/terms >.
+// Minecraft is a trademark of Mojang AB. Libnbt is developed by a third
+// party under the terms provided at < http://minecraft.net/terms >.
 // 
 // This file is part of libmcmap.
 // 
-// Libmcmap is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Libmcmap is free software: you can redistribute it and/or modify it
+// under the terms of the Lesser GNU General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
 // 
-// Libmcmap is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// Libmcmap is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// Lesser GNU General Public License for more details.
 // 
-// You should have received a copy of the GNU General Public License
-// along with libmcmap.  If not, see < http://www.gnu.org/licenses/ >.
+// You should have received a copy of the Lesser GNU General Public
+// License along with libmcmap.  If not, see
+// < http://www.gnu.org/licenses/ >.
 // 
-//---------------------------------------------------------------------
+//----------------------------------------------------------------------
 
 #include <stdio.h>
 #include <stdlib.h>

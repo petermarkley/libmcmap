@@ -1,14 +1,13 @@
-//---------------------------------------------------------------------
+//----------------------------------------------------------------------
 //                         libnbt
 //   Parsing and encoding the Minecraft Named Binary Tag format
 //       < http://minecraft.gamepedia.com/NBT_format >
 // 
-// Written by and Copyright 2013 Peter Markley <quartz@malexmedia.net>
-// Distributed under the terms of the GNU General Public License.
+// Copyright 2013-2015 by Peter Markley <quartz@malexmedia.net>.
+// Distributed under the terms of the Lesser GNU General Public License.
 // 
-// Minecraft is the property of Mojang and a trademark of Notch
-// Developement AB. Libnbt is developed by a third party under the
-// terms provided at < http://minecraft.net/terms >.
+// Minecraft is a trademark of Mojang AB. Libnbt is developed by a third
+// party under the terms provided at < http://minecraft.net/terms >.
 // 
 // Special thanks goes to Lukas Niederbremer <webmaster@flippeh.de>
 // and Clark Gaebel <cg.wowus.cg@gmail.com> for a similar library
@@ -17,20 +16,21 @@
 // 
 // This file is part of libnbt.
 // 
-// Libnbt is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Libnbt is free software: you can redistribute it and/or modify it
+// under the terms of the Lesser GNU General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
 // 
-// Libnbt is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// Libnbt is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// Lesser GNU General Public License for more details.
 // 
-// You should have received a copy of the GNU General Public License
-// along with libnbt.  If not, see < http://www.gnu.org/licenses/ >.
+// You should have received a copy of the Lesser GNU General Public
+// License along with libnbt.  If not, see
+// < http://www.gnu.org/licenses/ >.
 // 
-//---------------------------------------------------------------------
+//----------------------------------------------------------------------
 
 #include <stdint.h>
 #include <errno.h>
