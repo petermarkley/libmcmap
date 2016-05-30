@@ -916,6 +916,8 @@ struct nbt_tag *nbt_copy(struct nbt_tag *i)
 			t = loop;
 			}
 		}
+	else
+		snprintf(nbt_error,NBT_MAXSTR,"nbt_copy() was given NULL pointer");
 	return o;
 	}
 

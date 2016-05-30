@@ -1373,7 +1373,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			if (!ishere1 || (TileEntities = nbt_child_find(Level,NBT_LIST,"TileEntities")) == NULL) //if the list is absent from the NBT struct...
 				{
 				//copy it...
-				if ((TileEntities = nbt_copy(c->special->tile_entities->parent)) == NULL)
+				if ((TileEntities = nbt_copy(c->special->tile_entities)) == NULL)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 					return -1;
@@ -1437,7 +1437,7 @@ int _mcmap_chunk_nbt_save(struct mcmap_chunk *c)
 			if (!ishere1 || (TileTicks = nbt_child_find(Level,NBT_LIST,"TileTicks")) == NULL) //if the list is absent from the NBT struct...
 				{
 				//copy it...
-				if ((TileTicks = nbt_copy(c->special->tile_ticks->parent)) == NULL)
+				if ((TileTicks = nbt_copy(c->special->tile_ticks)) == NULL)
 					{
 					snprintf(mcmap_error,MCMAP_MAXSTR,"%s: %s",NBT_LIBNAME,nbt_error);
 					return -1;
