@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 		}
 	//read and print
 	i = infile;
-	if (argv[i] > 0)
+	if (i > 0)
 		{
 		if (ret != '\0')
 			{
