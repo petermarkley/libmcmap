@@ -6,8 +6,9 @@
 // Copyright 2013-2015 by Peter Markley <quartz@malexmedia.net>.
 // Distributed under the terms of the Lesser GNU General Public License.
 // 
-// Minecraft is a trademark of Mojang AB. Libnbt is developed by a third
-// party under the terms provided at < http://minecraft.net/terms >.
+// Minecraft is a trademark of Mojang AB. Libmcmap is developed by a
+// third party under the terms provided at
+// < http://minecraft.net/terms >.
 // 
 // This file is part of libmcmap.
 // 
