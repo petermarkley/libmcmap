@@ -1522,6 +1522,12 @@ int mcmap_chunk_write(struct mcmap_region *r, int x, int z, struct mcmap_chunk *
 		{
 		nbt_free(c->raw);
 		c->raw = NULL;
+		if (c->special != NULL)
+			{
+			c->special->entities = NULL;
+			c->special->tile_entities = NULL;
+			c->special->tile_ticks = NULL;
+			}
 		}
 	
 	//negotiate a place for the memory buffer in the 'mcmap_region' struct, and save the buffer there
