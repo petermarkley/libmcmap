@@ -995,7 +995,7 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	char c[NBT_MAXSTR];
 	char b[NBT_MAXSTR];
 	struct nbt_tag *probe;
-	int i,j;
+	int i,j, width_safe = (width<1?16:width);
 	
 	if (t == NULL)
 		return;
@@ -1067,7 +1067,7 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 				for (i=0; i < t->payload.p_byte_array.size;)
 					{
 					fprintf(f,"\n %s%s    %02x",c,b,(uint8_t)t->payload.p_byte_array.data[i++]);
-					while (i%width > 0 && i < t->payload.p_byte_array.size)
+					while (i%width_safe > 0 && i < t->payload.p_byte_array.size)
 						fprintf(f," %02x",(uint8_t)t->payload.p_byte_array.data[i++]);
 					j++;
 					if (maxlines > 0)
@@ -1099,7 +1099,7 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 				for (i=0; i < t->payload.p_int_array.size;)
 					{
 					fprintf(f,"\n %s%s    %d",c,b,t->payload.p_int_array.data[i++]);
-					while (i%width > 0 && i < t->payload.p_int_array.size)
+					while (i%width_safe > 0 && i < t->payload.p_int_array.size)
 						fprintf(f," %d",t->payload.p_int_array.data[i++]);
 					j++;
 					if (maxlines > 0)
@@ -1122,10 +1122,10 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	
 	//children
 	if (t->firstchild != NULL)
-		nbt_print_ascii(f,t->firstchild,maxlines,width);
+		nbt_print_ascii(f,t->firstchild,maxlines,width_safe);
 	//subsequent siblings
 	if (t->next_sib != NULL)
-		nbt_print_ascii(f,t->next_sib,maxlines,width);
+		nbt_print_ascii(f,t->next_sib,maxlines,width_safe);
 	
 	return;
 	}
