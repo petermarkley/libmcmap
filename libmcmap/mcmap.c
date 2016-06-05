@@ -1696,17 +1696,31 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		{ \
 		int rx,rz, cx,cz, bx,bz; \
 		if ((w) == NULL || y<0 || y>=256) \
+			{ \
+			snprintf(mcmap_error,MCMAP_MAXSTR,"invalid arguments"); \
 			return -1; \
+			} \
 		rx = (int)floor(((double)(x))/512.0) - (w)->start_x; \
 		rz = (int)floor(((double)(z))/512.0) - (w)->start_z; \
 		if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z) \
+			{ \
+			snprintf(mcmap_error,MCMAP_MAXSTR,"region %d,%d not found", rx + (w)->start_x, rz + (w)->start_z); \
 			return -1; \
+			} \
 		cx = (int)floor(((double)(x))/16.0); \
 		cz = (int)floor(((double)(z))/16.0); \
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) ); \
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) ); \
-		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL || (w)->regions[rz][rx]->chunks[cz][cx]->component1 == NULL) \
+		if ((w)->regions[rz][rx]->chunks[cz][cx] == NULL) \
+			{ \
+			snprintf(mcmap_error,MCMAP_MAXSTR,"chunk %d,%d not found in region %d,%d",cx,cz, rx + (w)->start_x, rz + (w)->start_z); \
 			return -1; \
+			} \
+		if ((w)->regions[rz][rx]->chunks[cz][cx]->component1 == NULL) \
+			{ \
+			snprintf(mcmap_error,MCMAP_MAXSTR,"chunk %d,%d in region %d,%d is missing requested info",cx,cz, rx + (w)->start_x, rz + (w)->start_z); \
+			return -1; \
+			} \
 		bx = ( ((x)<0) ? (((x)+1)%16+15) : ((x)%16) ); \
 		bz = ( ((z)<0) ? (((z)+1)%16+15) : ((z)%16) ); \
 		w->regions[rz][rx]->chunks[cz][cx]->component1->component2[bz][bx] = (value); \
@@ -1736,11 +1750,17 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		{
 		int rx,rz, cx,cz;
 		if ((w) == NULL)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"invalid arguments");
 			return NULL;
+			}
 		rx = (int)floor(((double)(x))/512.0) - (w)->start_x;
 		rz = (int)floor(((double)(z))/512.0) - (w)->start_z;
 		if (rx<0 || rx >= (w)->size_x || rz<0 || rz >= (w)->size_z)
+			{
+			snprintf(mcmap_error,MCMAP_MAXSTR,"region %d,%d not found", rx + (w)->start_x, rz + (w)->start_z);
 			return NULL;
+			}
 		cx = (int)floor(((double)(x))/16.0);
 		cz = (int)floor(((double)(z))/16.0);
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
