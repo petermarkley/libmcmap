@@ -3003,7 +3003,7 @@ int mcmap_prime_single(struct mcmap_level *l, struct mcmap_level_world *w, int x
 						{
 						//expand array
 						w->size_x -= rx;
-						w->start_z += rx;
+						w->start_x += rx;
 						for (lz=0; lz < w->size_z; lz++)
 							{
 							if ((w->regions[lz] = (struct mcmap_level_region **)realloc(w->regions[lz],w->size_x*sizeof(struct mcmap_level_region *))) == NULL)
