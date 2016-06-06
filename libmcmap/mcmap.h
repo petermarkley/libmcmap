@@ -163,7 +163,7 @@ typedef enum
 	MCMAP_SILVERFISH_EGG            =  97,
 	MCMAP_STONE_BRICKS              =  98,
 	MCMAP_HUGE_BROWN_MUSHROOM       =  99,
-	MCMAP_HUGE_RED_MUCHROOM         = 100,
+	MCMAP_HUGE_RED_MUSHROOM         = 100,
 	MCMAP_IRON_BARS                 = 101,
 	MCMAP_GLASS_PANE                = 102,
 	MCMAP_MELON                     = 103,
