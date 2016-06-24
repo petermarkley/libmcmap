@@ -3128,7 +3128,7 @@ int mcmap_prime_circle(struct mcmap_level *l, struct mcmap_level_world *w, int x
 					bz = z;
 				}
 			//load the chunk if its closest corner intrudes in the circle
-			if (sqrt(pow((double)bx,2)+pow((double)bz,2)) <= radius && mcmap_prime_single(l,w,bx,bz,mode,rem,create) == -1)
+			if (sqrt(pow((double)(bx-x),2)+pow((double)(bz-z),2)) <= radius && mcmap_prime_single(l,w,bx,bz,mode,rem,create) == -1)
 				return -1;
 			}
 		}
