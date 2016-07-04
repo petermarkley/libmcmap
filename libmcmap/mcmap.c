@@ -1765,7 +1765,7 @@ void mcmap_chunk_free(struct mcmap_chunk *c)
 		cz = (int)floor(((double)(z))/16.0);
 		cx = ( (cx<0) ? ((cx+1)%32+31) : (cx%32) );
 		cz = ( (cz<0) ? ((cz+1)%32+31) : (cz%32) );
-		if (w->regions[rz][rx]->chunks[cz][cx])
+		if (w->regions[rz][rx]->chunks[cz][cx] == NULL)
 			snprintf(mcmap_error,MCMAP_MAXSTR,"chunk index %d,%d missing from region %d,%d", cx,cz, rx + (w)->start_x, rz + (w)->start_z);
 		return w->regions[rz][rx]->chunks[cz][cx];
 		}
