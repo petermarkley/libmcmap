@@ -213,9 +213,11 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 		case MCMAP_LAVA:
 		case MCMAP_LIT_REDSTONE_LAMP:
 		case MCMAP_SEA_LANTERN:
+		case MCMAP_END_GATEWAY:
 			return 0x0f; //light level 15
 			break;
 		case MCMAP_TORCH:
+		case MCMAP_END_ROD:
 			return 0x0e; //light level 14
 			break;
 		case MCMAP_LIT_FURNACE:
@@ -232,6 +234,9 @@ uint8_t _mcmap_light_update_emit(mcmap_blockid i)
 		case MCMAP_ENDER_CHEST:
 		case MCMAP_LIT_REDSTONE_TORCH:
 			return 0x07; //light level 7
+			break;
+		case MCMAP_MAGMA:
+			return 0x03; //light level 3
 			break;
 		case MCMAP_BREWING_STAND:
 		case MCMAP_BROWN_MUSHROOM:
@@ -355,11 +360,17 @@ uint8_t _mcmap_light_update_extinct(mcmap_blockid i)
 		case MCMAP_JUNGLE_WOOD_DOOR:
 		case MCMAP_ACACIA_WOOD_DOOR:
 		case MCMAP_DARK_OAK_WOOD_DOOR:
+		case MCMAP_END_ROD:
+		case MCMAP_CHORUS_PLANT:
+		case MCMAP_CHORUS_FLOWER:
+		case MCMAP_BEETROOTS:
+		case MCMAP_STRUCTURE_VOID:
 			return 0x01;
 			break;
 		case MCMAP_FLOWING_WATER:
 		case MCMAP_WATER:
 		case MCMAP_ICE:
+		case MCMAP_FROSTED_ICE:
 			return 0x03;
 			break;
 		default: return 0x0f; break;
@@ -2072,11 +2083,10 @@ int mcmap_light_update(struct mcmap_level *l, struct mcmap_level_world *w)
 struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
 	const char *name,    //level name (separate from 'path')
-	const char *genname, //should be one of "default", "flat", "largeBiomes", or "amplified" (case insensitive)
-	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
-		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
+	const char *genname, //should be one of "default", "flat", "largeBiomes", "amplified", "customized", or "debug_all_block_states" (case insensitive)
+	const char *genoptions, //may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators
 	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)
-	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, or MCMAP_GAME_ADVENTURE
+	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, MCMAP_GAME_ADVENTURE, or MCMAP_GAME_SPECTATOR
 	int hardcore,    //boolean flag for whether minecraft should delete the world upon the player's first death
 	int commands,    //boolean flag for whether minecraft should allow in-game cheat commands
 	int comblock,    //boolean flag for whether command blocks print to the in-game chat

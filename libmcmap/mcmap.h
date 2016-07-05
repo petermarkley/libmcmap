@@ -260,7 +260,29 @@ typedef enum
 	MCMAP_BIRCH_WOOD_DOOR           = 194,
 	MCMAP_JUNGLE_WOOD_DOOR          = 195,
 	MCMAP_ACACIA_WOOD_DOOR          = 196,
-	MCMAP_DARK_OAK_WOOD_DOOR        = 197
+	MCMAP_DARK_OAK_WOOD_DOOR        = 197,
+	MCMAP_END_ROD                   = 198,
+	MCMAP_CHORUS_PLANT              = 199,
+	MCMAP_CHORUS_FLOWER             = 200,
+	MCMAP_PURPUR_BLOCK              = 201,
+	MCMAP_PURPUR_PILLAR             = 202,
+	MCMAP_PURPUR_STAIRS             = 203,
+	MCMAP_PURPUR_DOUBLE_SLAB        = 204,
+	MCMAP_PURPUR_SLAB               = 205,
+	MCMAP_END_BRICKS                = 206,
+	MCMAP_BEETROOTS                 = 207,
+	MCMAP_GRASS_PATH                = 208,
+	MCMAP_END_GATEWAY               = 209,
+	MCMAP_REPEATING_COMMAND_BLOCK   = 210,
+	MCMAP_CHAIN_COMMAND_BLOCK       = 211,
+	MCMAP_FROSTED_ICE               = 212,
+	MCMAP_MAGMA                     = 213,
+	MCMAP_NETHER_WART_BLOCK         = 214,
+	MCMAP_RED_NETHER_BRICK          = 215,
+	MCMAP_BONE_BLOCK                = 216,
+	MCMAP_STRUCTURE_VOID            = 217,
+	                               // ...
+	MCMAP_STRUCTURE_BLOCK           = 255
 	} mcmap_blockid;
 typedef enum
 	{
@@ -306,6 +328,8 @@ typedef enum
 	MCMAP_MESA_PLATEAU_F        =  38,
 	MCMAP_MESA_PLATEAU          =  39,
 	                           // ...
+	MCMAP_THE_VOID              = 127,
+	MCMAP_PLAINS_M              = 128,
 	MCMAP_SUNFLOWER_PLAINS      = 129,
 	MCMAP_DESERT_M              = 130,
 	MCMAP_EXTREME_HILLS_M       = 131,
@@ -318,7 +342,7 @@ typedef enum
 	                           // 138,
 	                           // 139,
 	MCMAP_ICE_PLAINS_SPIKES     = 140,
-	MCMAP_ICE_MOUNTAINS_SPIKES  = 141,
+	                           // 141,
 	                           // 142,
 	                           // 143,
 	                           // 144,
@@ -337,8 +361,8 @@ typedef enum
 	MCMAP_ROOFED_FOREST_M       = 157,
 	MCMAP_COLD_TAIGA_M          = 158,
 	                           // 159
-	MCMAP_MEGA_SPRUCE_TAIGA_1   = 160,
-	MCMAP_MEGA_SPRUCE_TAIGA_2   = 161,
+	MCMAP_MEGA_SPRUCE_TAIGA     = 160,
+	MCMAP_REDWOOD_TAIGA_HILLS_M = 161,
 	MCMAP_EXTREME_HILLS_PLUS_M  = 162,
 	MCMAP_SAVANNA_M             = 163,
 	MCMAP_SAVANNA_PLATEAU_M     = 164,
@@ -497,7 +521,7 @@ void mcmap_chunk_free(struct mcmap_chunk *);
 // ---------------------
 // (this is the only recommended API layer)
 
-#define MCMAP_OPTIONS_SUPERFLAT "7,2x3,2"
+#define MCMAP_OPTIONS_SUPERFLAT "3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;village"
 //acceptable values for the 'GameType' parameter in the 'level.dat' file
 enum
 	{
@@ -559,10 +583,9 @@ struct mcmap_level *mcmap_level_new (
 	long int seed,       //random seed, will use 'time()' if given 0
 	const char *name,    //level name (separate from 'path')
 	const char *genname, //should be one of "default", "flat", "largeBiomes", "amplified", "customized", or "debug_all_block_states" (case insensitive)
-	const char *genoptions, //comma-separated list of base-10 block types from the bottom of the map until air, for use by
-		                   //the "flat" generator (may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators)
+	const char *genoptions, //may be MCMAP_OPTIONS_SUPERFLAT for default or NULL for other generators
 	int structures,  //boolean flag for whether minecraft should generate structures (e.g. villages, strongholds, mineshafts)
-	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, or MCMAP_GAME_ADVENTURE
+	int gametype,    //should be one of MCMAP_GAME_SURVIVAL, MCMAP_GAME_CREATIVE, MCMAP_GAME_ADVENTURE, or MCMAP_GAME_SPECTATOR
 	int hardcore,    //boolean flag for whether minecraft should delete the world upon the player's first death
 	int commands,    //boolean flag for whether minecraft should allow in-game cheat commands
 	int comblock,    //boolean flag for whether command blocks print to the in-game chat
