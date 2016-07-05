@@ -59,7 +59,7 @@ char mcmap_error[MCMAP_MAXSTR]; //in error conditions, this will be populated wi
 // general definitions
 // -------------------
 
-//minecraft 1.8.1 data values < http://minecraft.gamepedia.com/Data_values >
+//minecraft 1.10 data values < http://minecraft.gamepedia.com/Data_values >
 //library does not entirely rely on block definitions being complete
 typedef enum
 	{
