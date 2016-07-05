@@ -3,7 +3,7 @@
 //   Parsing and encoding the Minecraft Named Binary Tag format
 //       < http://minecraft.gamepedia.com/NBT_format >
 // 
-// Copyright 2013-2015 by Peter Markley <quartz@malexmedia.net>.
+// Copyright 2013-2016 by Peter Markley <quartz@malexmedia.net>.
 // Distributed under the terms of the Lesser GNU General Public License.
 // 
 // Minecraft is a trademark of Mojang AB. Libnbt is developed by a third
