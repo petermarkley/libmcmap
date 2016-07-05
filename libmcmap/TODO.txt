@@ -1,0 +1,8 @@
+1. generalize coordinate conversions into separate function? used redundantly in the following places:
+	-= mcmap_prime_single(), lines 3054-3057
+	-= mcmap_get_*() and mcmap_set_*() functions, lines 1682-1685, 1727-1730, 1781-1784
+	-= certain applications
+2. absorb useful application tools into libmcmap? e.g.:
+	-= floating island primitive (see test.c & other private applications)
+	-= diagnostic signpost
+	-= chunk mover (would use coordinate converter)
