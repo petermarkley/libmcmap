@@ -889,6 +889,12 @@ struct mcmap_chunk *mcmap_chunk_read(struct mcmap_region_chunk *rc, mcmap_mode m
 		{
 		nbt_free(c->raw);
 		c->raw = NULL;
+		if (c->special != NULL)
+			{
+			c->special->entities = NULL;
+			c->special->tile_entities = NULL;
+			c->special->tile_ticks = NULL;
+			}
 		}
 	
 	return c;
