@@ -2660,7 +2660,11 @@ int _mcmap_level_world_write(struct mcmap_level *l, struct mcmap_level_world *w,
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
 	//make sure directory exists
+#ifdef _WIN32
+	if (mkdir(fpath                            ) == -1 && errno != EEXIST)
+#else
 	if (mkdir(fpath,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
+#endif
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on '%s': %s",fpath,strerror(errno));
 		return -1;
@@ -2735,7 +2739,11 @@ int mcmap_level_write(struct mcmap_level *l, int rem)
 		return -1;
 		}
 	//make sure directory exists
+#ifdef _WIN32
+	if (mkdir(l->path                            ) == -1 && errno != EEXIST)
+#else
 	if (mkdir(l->path,S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST)
+#endif
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"mkdir() on '%s': %s",l->path,strerror(errno));
 		return -1;
