@@ -11,19 +11,19 @@ Installation instructions are below.
 
 # Screenshots
 
-![ASCII printout of NBT data](screenshots/20140515a-screenshot.png)
+[ASCII printout of NBT data:](https://twitter.com/petermarkley/status/373872343589744640)
 
-https://twitter.com/petermarkley/status/373872343589744640
-
-
-![Boring a hole through an existing world](screenshots/20140515b-screenshot.png)
-
-https://twitter.com/petermarkley/status/386722644088741888
+![Screenshot A](screenshots/20140515a-screenshot.png)
 
 
-![Creating a world from scratch](screenshots/20140515c-screenshot.png)
+[Boring a hole through an existing world:](https://twitter.com/petermarkley/status/386722644088741888)
 
-https://twitter.com/petermarkley/status/388499118584115200
+![Screenshot B](screenshots/20140515b-screenshot.png)
+
+
+[Creating a world from scratch:](https://twitter.com/petermarkley/status/388499118584115200)
+
+![Screenshot C](screenshots/20140515c-screenshot.png)
 
 # Building & Installing
 
