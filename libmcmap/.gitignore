@@ -1,0 +1,10 @@
+*.so
+*.dylib
+*.dll
+*.o
+*.exe
+test
+test.dSYM
+shownbt
+shownbt.dSYM
+maps
