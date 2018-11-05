@@ -7,6 +7,8 @@ Inside the repo are two projects; `libnbt` is a dependency of `libmcmap`. (This 
 
 Libmcmap & libnbt compile natively on Mac OSX and Linux, and on Windows using [MinGW](http://mingw.org/).
 
+Installation instructions are below.
+
 # Screenshots
 
 ![ASCII printout of NBT data](screenshots/20140515a-screenshot.png)
