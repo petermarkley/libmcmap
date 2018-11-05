@@ -9,6 +9,6 @@ Libmcmap & libnbt compile natively on Mac OSX and Linux, and on Windows using [M
 
 # Development & Testing Screenshots:
 
-![ASCII printout of NBT data](https://www.dropbox.com/s/g1lup0ln3aay1s9/20140515a-screenshot.png?dl=1)
-![Boring a hole through an existing world](https://www.dropbox.com/s/yssy2en5kwjemk4/20140515b-screenshot.png?dl=1)
-![Creating a world from scratch](https://www.dropbox.com/s/hmewjgtepji59m7/20140515c-screenshot.png?dl=1)
+* [ASCII printout of NBT data](https://www.dropbox.com/s/g1lup0ln3aay1s9/20140515a-screenshot.png?dl=1)
+* [Boring a hole through an existing world](https://www.dropbox.com/s/yssy2en5kwjemk4/20140515b-screenshot.png?dl=1)
+* [Creating a world from scratch](https://www.dropbox.com/s/hmewjgtepji59m7/20140515c-screenshot.png?dl=1)
