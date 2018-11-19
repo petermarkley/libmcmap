@@ -462,7 +462,7 @@ struct mcmap_chunk_geom
 	int8_t   biomes     [16][16]; //these are 8-bit
 	};
 //lighting
-struct mcmap_chunk_light //this info is not used by 'mcmap_chunk_write()', but allocating it serves as a toggle for dealing with the NBT light data
+struct mcmap_chunk_light //this info is not needed by 'mcmap_chunk_write()', but allocating it serves as a toggle for dealing with the NBT light data
 	{
 	uint8_t  block[256][16][16]; //4-bit block-emitted light level
 	uint8_t    sky[256][16][16]; //4-bit sky-emitted light level

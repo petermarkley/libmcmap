@@ -45,7 +45,7 @@
 	#include "memdb.h"
 #endif
 
-//worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
+//worker function for 'mcmap_level_memcheck()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 if good and -1 if bad
 int _mcmap_level_world_memcheck(struct mcmap_level_world *w, const char *world)
 	{
