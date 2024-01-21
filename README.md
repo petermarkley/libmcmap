@@ -25,6 +25,10 @@ Installation instructions are below.
 
 ![Screenshot C](screenshots/20140515c-screenshot.png)
 
+[Fixing blank map items from v1.7.9 in v1.20.4](https://twitter.com/petermarkley/status/1749183458042134832)
+
+![Screenshot 2024, Jan 21](screenshots/20240121-screenshot.png)
+
 # Building & Installing
 
 Each of the two projects must be compiled with `make`, using an argument for your environment:
