@@ -1030,10 +1030,8 @@ struct nbt_tag *nbt_child_new(struct nbt_tag *parent, nbt_tagid type, const char
 	return t;
 	}
 
-//print ASCII representation of NBT structure to the given FILE stream;
-//print arrays with 'width' items per line;
-//stop printing array data after 'maxlines' lines (-1 for unlimited)
-void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
+//internal recusive-aware utility for nbt_print_ascii()
+void _nbt_print_ascii_util(FILE *f, struct nbt_tag *t, int maxlines, int width, int depth)
 	{
 	char c[NBT_MAXSTR];
 	char b[NBT_MAXSTR];
@@ -1046,7 +1044,8 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	b[0] = '\0';
 	
 	//formatting prefix
-	for (probe = t; probe->parent != NULL; probe = probe->parent)
+	i = depth;
+	for (probe = t; probe->parent != NULL && i > 0; probe = probe->parent)
 		{
 		if (probe != t)
 			{
@@ -1056,8 +1055,9 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 				snprintf(b,NBT_MAXSTR,"     %s",c);
 			}
 		strncpy(c,b,NBT_MAXSTR);
+		i--;
 		}
-	if (t->parent != NULL)
+	if (t->parent != NULL && depth > 0)
 		{
 		if (t->next_sib != NULL)
 			snprintf(b,NBT_MAXSTR,"+-- ");
@@ -1090,9 +1090,10 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	
 	//tag name
 	if (t->name != NULL)
-		fprintf(f," \"%s\":  ",t->name);
-	else
-		fprintf(f,":  ");
+		fprintf(f," \"%s\"",t->name);
+	if (depth == 0 && t->parent != NULL)
+		fprintf(f," [NOT ROOT TAG]");
+	fprintf(f,":  ");
 	
 	//payload
 	switch (t->type)
@@ -1190,11 +1191,23 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 	
 	//children
 	if (t->firstchild != NULL)
-		nbt_print_ascii(f,t->firstchild,maxlines,width_safe);
+		_nbt_print_ascii_util(f,t->firstchild,maxlines,width_safe,depth+1);
 	//subsequent siblings
-	if (t->next_sib != NULL)
-		nbt_print_ascii(f,t->next_sib,maxlines,width_safe);
+	if (depth > 0)
+		{
+		if (t->next_sib != NULL)
+			_nbt_print_ascii_util(f,t->next_sib,maxlines,width_safe,depth);
+		}
 	
+	return;
+	}
+
+//print ASCII representation of NBT structure to the given FILE stream;
+//print arrays with 'width' items per line;
+//stop printing array data after 'maxlines' lines (-1 for unlimited)
+void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
+	{
+	_nbt_print_ascii_util(f,t,maxlines,width,0);
 	return;
 	}
 
