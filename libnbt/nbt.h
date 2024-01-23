@@ -146,6 +146,7 @@ struct nbt_tag *nbt_separate(struct nbt_tag *);
 struct nbt_tag *nbt_copy(struct nbt_tag *);
 
 //locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
+//NBT_END type matches any tag type.
 //(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *, nbt_tagid, const char *);
 

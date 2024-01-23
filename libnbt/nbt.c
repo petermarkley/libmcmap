@@ -964,7 +964,8 @@ struct nbt_tag *nbt_copy(struct nbt_tag *i)
 	return o;
 	}
 
-//locate & return a particular child of a compound or list tag by its type and name; return NULL if not found
+//locate & return a particular child of a compound or list tag by its type and name; return NULL if not found.
+//NBT_END matches any tag type.
 //(convenience function; application programmer may bypass if he knows what he's doing)
 struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *name)
 	{
@@ -973,7 +974,7 @@ struct nbt_tag *nbt_child_find(struct nbt_tag *t, nbt_tagid type, const char *na
 		return NULL;
 	for (loop = t->firstchild; loop != NULL; loop = loop->next_sib)
 		{
-		if (loop->type == type)
+		if (type == NBT_END || loop->type == type)
 			{
 			if (name == NULL)
 				{
