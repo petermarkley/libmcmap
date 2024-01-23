@@ -66,7 +66,8 @@ typedef enum //tag type
 	NBT_STRING     =  8, //one NBT_SHORT payload followed by that many bytes of UTF-8 text
 	NBT_LIST       =  9, //one NBT_BYTE payload signifying a tag id, then one NBT_INT payload, then that many payloads of that type
 	NBT_COMPOUND   = 10, //tags, each with an id and name, terminated by an NBT_END
-	NBT_INT_ARRAY  = 11  //one NBT_INT payload followed by that many NBT_INTs
+	NBT_INT_ARRAY  = 11, //one NBT_INT payload followed by that many NBT_INTs
+	NBT_LONG_ARRAY = 12  //one NBT_INT payload followed by that many NBT_LONGs
 	} nbt_tagid;
 
 typedef enum //compression type
@@ -104,6 +105,11 @@ struct nbt_tag
 			int32_t size;
 			int32_t *data;
 			}     p_int_array;
+		struct nbt_tag_long_array
+			{
+			int32_t size;
+			int64_t *data;
+			}     p_long_array;
 		} payload;
 	
 	struct nbt_tag *parent; //only for the root tag will this be NULL

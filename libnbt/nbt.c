@@ -324,8 +324,25 @@ int _nbt_tag_read(uint8_t *input, size_t limit, struct nbt_tag **t, struct nbt_t
 					}
 				}
 			break;
+		case NBT_LONG_ARRAY:
+			t[0]->payload.p_long_array.size = cswapr_32(&(input[nextin]));
+			nextin += 4;
+			if (t[0]->payload.p_long_array.size > 0)
+				{
+				if ((t[0]->payload.p_long_array.data = (int64_t *)calloc(t[0]->payload.p_int_array.size,8)) == NULL)
+					{
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+					return -1;
+					}
+				for (i=0; i < t[0]->payload.p_long_array.size; i++)
+					{
+					t[0]->payload.p_long_array.data[i] = cswapr_64(&(input[nextin]));
+					nextin += 8;
+					}
+				}
+			break;
 		default:
-			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id");
+			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id %d",t[0]->type);
 			return -1;
 			break;
 		}
@@ -548,8 +565,21 @@ int _nbt_tag_write(uint8_t **output, unsigned int nextin, size_t *size, struct n
 				nextin += 4;
 				}
 			break;
+		case NBT_LONG_ARRAY:
+			//write array size
+			output[0] = _nbt_buff_safe(output[0],size,nextin+4);
+			cswapw_32(&(output[0][nextin]),t->payload.p_long_array.size);
+			nextin += 4;
+			//write array
+			output[0] = _nbt_buff_safe(output[0],size, nextin + (t->payload.p_long_array.size*8));
+			for (i=0; i < t->payload.p_long_array.size; i++)
+				{
+				cswapw_64(&(output[0][nextin]),t->payload.p_long_array.data[i]);
+				nextin += 8;
+				}
+			break;
 		default:
-			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id");
+			snprintf(nbt_error,NBT_MAXSTR,"unknown tag id %d",t->type);
 			return -1;
 			break;
 		}
@@ -794,6 +824,10 @@ void nbt_free(struct nbt_tag *t)
 				if (t->payload.p_int_array.data != NULL)
 					free(t->payload.p_int_array.data);
 				break;
+			case NBT_LONG_ARRAY:
+				if (t->payload.p_long_array.data != NULL)
+					free(t->payload.p_long_array.data);
+				break;
 			default: break;
 			}
 		//whole tag
@@ -897,6 +931,15 @@ struct nbt_tag *nbt_copy(struct nbt_tag *i)
 					return NULL;
 					}
 				memcpy(o->payload.p_int_array.data,i->payload.p_int_array.data,i->payload.p_int_array.size*sizeof(int32_t));
+				break;
+			case NBT_LONG_ARRAY:
+				o->payload.p_long_array.size = i->payload.p_long_array.size;
+				if ((o->payload.p_long_array.data = (int64_t *)calloc(o->payload.p_long_array.size,sizeof(int64_t))) == NULL)
+					{
+					snprintf(nbt_error,NBT_MAXSTR,"calloc() returned NULL");
+					return NULL;
+					}
+				memcpy(o->payload.p_long_array.data,i->payload.p_long_array.data,i->payload.p_long_array.size*sizeof(int64_t));
 				break;
 			default: break;
 			}
@@ -1041,6 +1084,7 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 		case NBT_LIST:       fprintf(f,"List");       break;
 		case NBT_COMPOUND:   fprintf(f,"Compound");   break;
 		case NBT_INT_ARRAY:  fprintf(f,"Int Array");  break;
+		case NBT_LONG_ARRAY: fprintf(f,"Long Array"); break;
 		default: break;
 		}
 	
@@ -1115,6 +1159,30 @@ void nbt_print_ascii(FILE *f, struct nbt_tag *t, int maxlines, int width)
 			else
 				fprintf(f," . . .");
 			break;
+		case NBT_LONG_ARRAY:
+			fprintf(f,"(%d items)",t->payload.p_long_array.size);
+			j=0; //'i' is array index, 'j' is a line counter
+			if (maxlines != 0)
+				{
+				for (i=0; i < t->payload.p_long_array.size;)
+					{
+					fprintf(f,"\n %s%s    %ld",c,b,t->payload.p_long_array.data[i++]);
+					while (i%width_safe > 0 && i < t->payload.p_long_array.size)
+						fprintf(f," %ld",t->payload.p_long_array.data[i++]);
+					j++;
+					if (maxlines > 0)
+						{
+						if (j >= maxlines)
+							{
+							i = t->payload.p_long_array.size; //end loop
+							fprintf(f,"\n %s%s    . . .",c,b); //drop ellipsis
+							}
+						}
+					}
+				}
+			else
+				fprintf(f," . . .");
+			break;
 		default: break;
 		}
 	
@@ -1162,6 +1230,13 @@ int nbt_memcheck(struct nbt_tag *t)
 			if (t->payload.p_int_array.size != 0 && (ret1 = memdb_check(t->payload.p_int_array.data)) != (ret2 = t->payload.p_int_array.size*sizeof(int32_t)))
 				{
 				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->'payload.p_int_array.data'=%p) returned %d (expected %d 'int32_t's totaling %d bytes)",t->name,t->payload.p_int_array.data,ret1,t->payload.p_int_array.size,ret2);
+				return -1;
+				}
+		break;
+		case NBT_LONG_ARRAY:
+			if (t->payload.p_long_array.size != 0 && (ret1 = memdb_check(t->payload.p_long_array.data)) != (ret2 = t->payload.p_long_array.size*sizeof(int64_t)))
+				{
+				snprintf(nbt_error,NBT_MAXSTR,"memdb_check(\"%s\"->'payload.p_long_array.data'=%p) returned %d (expected %d 'int64_t's totaling %d bytes)",t->name,t->payload.p_long_array.data,ret1,t->payload.p_long_array.size,ret2);
 				return -1;
 				}
 		break;
