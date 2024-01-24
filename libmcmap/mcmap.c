@@ -2441,7 +2441,7 @@ struct mcmap_level *mcmap_level_new (
 
 //worker function for 'mcmap_level_read()', called for each of 'mcmap_level's members 'overworld', 'nether', & 'end'
 //returns 0 on success and -1 on failure
-int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, const char *wpath, mcmap_mode mode, int rem)
+int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, mcmap_mode mode, int rem)
 	{
 	DIR *d;
 	struct dirent *e;
@@ -2455,16 +2455,9 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 	//resolve full path from level and world components
 	i = strlen(l->path);
 	if (i==0 || l->path[i-1] == '/')
-		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,wpath);
+		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
-		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,wpath);
-	//store relative world path
-	if ((w->path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
-		{
-		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
-		return -1;
-		}
-	strcpy(w->path,wpath);
+		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
 	//open directory stream
 	if ((d = opendir(fpath)) == NULL)
 		{
@@ -2579,7 +2572,7 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 	{
 	struct mcmap_level *l;
-	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR];
+	char lpath[MCMAP_MAXSTR], spath[MCMAP_MAXSTR], wpath[MCMAP_MAXSTR];
 	int i;
 	struct nbt_tag *t;
 	if (path == NULL)
@@ -2606,22 +2599,40 @@ struct mcmap_level *mcmap_level_read(const char *path, mcmap_mode mode, int rem)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
-	//store directory path...
+	//store directory paths...
 	if ((l->path = (char *)calloc(strlen(path)+1,1)) == NULL)
 		{
 		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
 		return NULL;
 		}
 	strcpy(l->path,path);
+	snprintf(wpath,MCMAP_MAXSTR,"region/");
+	if ((l->overworld.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->overworld.path,wpath);
+	snprintf(wpath,MCMAP_MAXSTR,"DIM-1/");
+	if ((l->nether.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->nether.path,wpath);
+	snprintf(wpath,MCMAP_MAXSTR,"DIM1/");
+	if ((l->end.path = (char *)calloc(strlen(wpath)+1,1)) == NULL)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"calloc() returned NULL");
+		return NULL;
+		}
+	strcpy(l->end.path,wpath);
 	//obtain session lock
 	l->lock = ((int64_t)time(NULL))*1000;
 	//populate level...
-	if (_mcmap_level_world_read(l,&(l->overworld),"region/",mode,rem) == -1)
-		return NULL;
-	if (_mcmap_level_world_read(l,&(l->nether),"DIM-1/",mode,rem) == -1)
-		return NULL;
-	if (_mcmap_level_world_read(l,&(l->end),"DIM1/",mode,rem) == -1)
-		return NULL;
+	_mcmap_level_world_read(l,&(l->overworld),mode,rem);
+	_mcmap_level_world_read(l,&(l->nether),mode,rem);
+	_mcmap_level_world_read(l,&(l->end),mode,rem);
 	//read 'level.dat' file...
 	if ((l->meta = nbt_file_read(lpath)) == NULL)
 		{
