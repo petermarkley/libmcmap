@@ -2443,12 +2443,12 @@ struct mcmap_level *mcmap_level_new (
 //returns 0 on success and -1 on failure
 int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, mcmap_mode mode, int rem)
 	{
-	DIR *d;
-	struct dirent *e;
+	DIR *d, *d_region;
+	struct dirent *e, *e_region;
 	int minx,minz,maxx,maxz;
 	int x,z, ix,iz, lx,lz;
 	int first, i;
-	char fpath[MCMAP_MAXSTR];
+	char fpath[MCMAP_MAXSTR], fpath_region[MCMAP_MAXSTR];
 	w->size_x = 0;
 	w->size_z = 0;
 	
@@ -2458,6 +2458,7 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 		snprintf(fpath,MCMAP_MAXSTR,"%s%s",l->path,w->path);
 	else
 		snprintf(fpath,MCMAP_MAXSTR,"%s/%s",l->path,w->path);
+	snprintf(fpath_region,MCMAP_MAXSTR,"%sregion/",fpath); //in case we need this later
 	//open directory stream
 	if ((d = opendir(fpath)) == NULL)
 		{
@@ -2468,7 +2469,31 @@ int _mcmap_level_world_read(struct mcmap_level *l, struct mcmap_level_world *w, 
 	first = 1;
 	while ((e = readdir(d)) != NULL)
 		{
-		if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
+		//brief detour checking for new subfolder 'region' inside 'DIM1' & 'DIM-1' ...
+		if (strcmp(e->d_name,"region") == 0) {
+			if ((d_region = opendir(fpath_region)) == NULL) {
+				snprintf(mcmap_error,MCMAP_MAXSTR,"opendir(\"%s\") returned NULL",fpath_region);
+				return -1;
+			}
+			while ((e_region = readdir(d_region)) != NULL) {
+				if (sscanf(e_region->d_name,"r.%d.%d.mca",&x,&z) == 2) {
+					if (first) {
+						first = 0;
+						minx = maxx = x;
+						minz = maxz = z;
+					} else {
+						if (x < minx)
+							minx = x;
+						if (x > maxx)
+							maxx = x;
+						if (z < minz)
+							minz = z;
+						if (z > maxz)
+							maxz = z;
+					}
+				}
+			}
+		} else if (sscanf(e->d_name,"r.%d.%d.mca",&x,&z) == 2)
 			{
 			if (first)
 				{
