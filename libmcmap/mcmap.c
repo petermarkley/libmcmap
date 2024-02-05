@@ -486,6 +486,11 @@ struct mcmap_region *mcmap_region_read(int ix, int iz, const char *path)
 		snprintf(mcmap_error,MCMAP_MAXSTR,"fstat() on '%s': %s",r_name,strerror(errno));
 		return NULL;
 		}
+	if (r_stat.st_size < 1)
+		{
+		snprintf(mcmap_error,MCMAP_MAXSTR,"file '%s' is unexpected size %ld",r_name,r_stat.st_size);
+		return NULL;
+		}
 	//allocate buffer...
 	if ((buff = (uint8_t *)calloc(r_stat.st_size,1)) == NULL)
 		{
